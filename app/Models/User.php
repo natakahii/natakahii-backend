@@ -46,6 +46,18 @@ class User extends Authenticatable implements JWTSubject
         return $this->belongsToMany(Role::class, 'role_user');
     }
 
+    /**
+     * Assign a role by name without duplicating existing assignments.
+     */
+    public function assignRole(string $roleName): void
+    {
+        $role = \App\Models\Role::where('name', $roleName)->first();
+
+        if ($role) {
+            $this->roles()->syncWithoutDetaching([$role->id]);
+        }
+    }
+
     public function hasRole(string $role): bool
     {
         return $this->roles()->where('name', $role)->exists();

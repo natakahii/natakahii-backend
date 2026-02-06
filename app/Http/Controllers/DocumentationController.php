@@ -260,6 +260,281 @@ class DocumentationController extends Controller
                     ],
                 ],
             ],
+            [
+                'group' => 'Admin',
+                'description' => 'Administrative endpoints for platform management. All routes require authentication and the admin role.',
+                'endpoints' => [
+                    [
+                        'name' => 'Dashboard Statistics',
+                        'method' => 'GET',
+                        'url' => '/api/v1/admin/dashboard',
+                        'description' => 'Retrieve high-level platform statistics including user, vendor, product, and order counts.',
+                        'auth_required' => true,
+                        'request' => [],
+                        'headers' => ['Authorization' => 'Bearer {token}'],
+                        'success_response' => [
+                            'status' => 200,
+                            'body' => [
+                                'message' => 'Dashboard statistics retrieved.',
+                                'data' => [
+                                    'total_users' => 150,
+                                    'active_users' => 142,
+                                    'blocked_users' => 8,
+                                    'total_vendors' => 25,
+                                    'active_vendors' => 20,
+                                    'total_products' => 340,
+                                    'total_orders' => 1200,
+                                    'total_revenue' => 58750.00,
+                                    'pending_orders' => 15,
+                                ],
+                            ],
+                        ],
+                        'error_responses' => [
+                            [
+                                'status' => 401,
+                                'description' => 'Unauthenticated',
+                                'body' => ['message' => 'Unauthenticated.'],
+                            ],
+                            [
+                                'status' => 403,
+                                'description' => 'Forbidden — user does not have admin role',
+                                'body' => ['message' => 'Forbidden. You do not have the required role.'],
+                            ],
+                        ],
+                    ],
+                    [
+                        'name' => 'List Users',
+                        'method' => 'GET',
+                        'url' => '/api/v1/admin/users',
+                        'description' => 'Retrieve a paginated list of all users. Supports filtering by status, role, and search keyword.',
+                        'auth_required' => true,
+                        'request' => [
+                            ['name' => 'status', 'type' => 'string', 'required' => false, 'rules' => 'in:active,blocked', 'description' => 'Filter by user status.'],
+                            ['name' => 'role', 'type' => 'string', 'required' => false, 'rules' => 'string', 'description' => 'Filter by role name (e.g. admin, vendor, customer).'],
+                            ['name' => 'search', 'type' => 'string', 'required' => false, 'rules' => 'string', 'description' => 'Search by name or email.'],
+                            ['name' => 'per_page', 'type' => 'integer', 'required' => false, 'rules' => 'integer|min:1|max:100', 'description' => 'Items per page. Default: 15.'],
+                            ['name' => 'page', 'type' => 'integer', 'required' => false, 'rules' => 'integer|min:1', 'description' => 'Page number.'],
+                        ],
+                        'headers' => ['Authorization' => 'Bearer {token}'],
+                        'success_response' => [
+                            'status' => 200,
+                            'body' => [
+                                'message' => 'Users retrieved.',
+                                'data' => [
+                                    'current_page' => 1,
+                                    'data' => [
+                                        ['id' => 1, 'name' => 'John Doe', 'email' => 'john@example.com', 'status' => 'active', 'roles' => [['id' => 3, 'name' => 'customer']]],
+                                        ['id' => 2, 'name' => 'Jane Smith', 'email' => 'jane@example.com', 'status' => 'active', 'roles' => [['id' => 2, 'name' => 'vendor']]],
+                                    ],
+                                    'last_page' => 10,
+                                    'per_page' => 15,
+                                    'total' => 150,
+                                ],
+                            ],
+                        ],
+                        'error_responses' => [
+                            [
+                                'status' => 401,
+                                'description' => 'Unauthenticated',
+                                'body' => ['message' => 'Unauthenticated.'],
+                            ],
+                            [
+                                'status' => 403,
+                                'description' => 'Forbidden',
+                                'body' => ['message' => 'Forbidden. You do not have the required role.'],
+                            ],
+                        ],
+                    ],
+                    [
+                        'name' => 'Get User',
+                        'method' => 'GET',
+                        'url' => '/api/v1/admin/users/{user}',
+                        'description' => 'Retrieve a single user by ID with their assigned roles.',
+                        'auth_required' => true,
+                        'request' => [],
+                        'headers' => ['Authorization' => 'Bearer {token}'],
+                        'success_response' => [
+                            'status' => 200,
+                            'body' => [
+                                'message' => 'User retrieved.',
+                                'data' => [
+                                    'id' => 1,
+                                    'name' => 'John Doe',
+                                    'email' => 'john@example.com',
+                                    'phone' => '+1234567890',
+                                    'status' => 'active',
+                                    'created_at' => '2026-01-15T10:30:00.000000Z',
+                                    'roles' => [['id' => 3, 'name' => 'customer', 'description' => 'Default role. Browses and purchases products.']],
+                                ],
+                            ],
+                        ],
+                        'error_responses' => [
+                            [
+                                'status' => 401,
+                                'description' => 'Unauthenticated',
+                                'body' => ['message' => 'Unauthenticated.'],
+                            ],
+                            [
+                                'status' => 403,
+                                'description' => 'Forbidden',
+                                'body' => ['message' => 'Forbidden. You do not have the required role.'],
+                            ],
+                            [
+                                'status' => 404,
+                                'description' => 'User not found',
+                                'body' => ['message' => 'No query results for model [App\\Models\\User] 999.'],
+                            ],
+                        ],
+                    ],
+                    [
+                        'name' => 'Update User Status',
+                        'method' => 'PATCH',
+                        'url' => '/api/v1/admin/users/{user}/status',
+                        'description' => 'Block or unblock a user. Admin cannot change their own status.',
+                        'auth_required' => true,
+                        'request' => [
+                            ['name' => 'status', 'type' => 'string', 'required' => true, 'rules' => 'in:active,blocked', 'description' => 'New status for the user.'],
+                        ],
+                        'headers' => ['Authorization' => 'Bearer {token}'],
+                        'success_response' => [
+                            'status' => 200,
+                            'body' => [
+                                'message' => 'User status updated to blocked.',
+                                'data' => [
+                                    'id' => 5,
+                                    'name' => 'Bad Actor',
+                                    'email' => 'bad@example.com',
+                                    'status' => 'blocked',
+                                    'roles' => [['id' => 3, 'name' => 'customer']],
+                                ],
+                            ],
+                        ],
+                        'error_responses' => [
+                            [
+                                'status' => 403,
+                                'description' => 'Cannot change own status',
+                                'body' => ['message' => 'You cannot change your own status.'],
+                            ],
+                            [
+                                'status' => 422,
+                                'description' => 'Validation failed',
+                                'body' => [
+                                    'message' => 'The given data was invalid.',
+                                    'errors' => ['status' => ['Status must be either "active" or "blocked".']],
+                                ],
+                            ],
+                        ],
+                    ],
+                    [
+                        'name' => 'Assign Role',
+                        'method' => 'POST',
+                        'url' => '/api/v1/admin/users/{user}/assign-role',
+                        'description' => 'Assign a role to a user. Uses syncWithoutDetaching so duplicate assignments are safe.',
+                        'auth_required' => true,
+                        'request' => [
+                            ['name' => 'role', 'type' => 'string', 'required' => true, 'rules' => 'exists:roles,name', 'description' => 'Role name to assign (admin, vendor, customer).'],
+                        ],
+                        'headers' => ['Authorization' => 'Bearer {token}'],
+                        'success_response' => [
+                            'status' => 200,
+                            'body' => [
+                                'message' => "Role 'vendor' assigned to John Doe.",
+                                'data' => [
+                                    'id' => 1,
+                                    'name' => 'John Doe',
+                                    'email' => 'john@example.com',
+                                    'status' => 'active',
+                                    'roles' => [
+                                        ['id' => 2, 'name' => 'vendor'],
+                                        ['id' => 3, 'name' => 'customer'],
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'error_responses' => [
+                            [
+                                'status' => 422,
+                                'description' => 'Invalid role',
+                                'body' => [
+                                    'message' => 'The given data was invalid.',
+                                    'errors' => ['role' => ['The specified role does not exist.']],
+                                ],
+                            ],
+                        ],
+                    ],
+                    [
+                        'name' => 'Revoke Role',
+                        'method' => 'DELETE',
+                        'url' => '/api/v1/admin/users/{user}/revoke-role',
+                        'description' => 'Remove a role from a user. Admin cannot revoke their own admin role.',
+                        'auth_required' => true,
+                        'request' => [
+                            ['name' => 'role', 'type' => 'string', 'required' => true, 'rules' => 'exists:roles,name', 'description' => 'Role name to revoke.'],
+                        ],
+                        'headers' => ['Authorization' => 'Bearer {token}'],
+                        'success_response' => [
+                            'status' => 200,
+                            'body' => [
+                                'message' => "Role 'vendor' revoked from John Doe.",
+                                'data' => [
+                                    'id' => 1,
+                                    'name' => 'John Doe',
+                                    'email' => 'john@example.com',
+                                    'status' => 'active',
+                                    'roles' => [['id' => 3, 'name' => 'customer']],
+                                ],
+                            ],
+                        ],
+                        'error_responses' => [
+                            [
+                                'status' => 403,
+                                'description' => 'Cannot revoke own admin role',
+                                'body' => ['message' => 'You cannot revoke your own admin role.'],
+                            ],
+                            [
+                                'status' => 422,
+                                'description' => 'Invalid role',
+                                'body' => [
+                                    'message' => 'The given data was invalid.',
+                                    'errors' => ['role' => ['The selected role is invalid.']],
+                                ],
+                            ],
+                        ],
+                    ],
+                    [
+                        'name' => 'List Roles',
+                        'method' => 'GET',
+                        'url' => '/api/v1/admin/roles',
+                        'description' => 'Retrieve all available roles in the system.',
+                        'auth_required' => true,
+                        'request' => [],
+                        'headers' => ['Authorization' => 'Bearer {token}'],
+                        'success_response' => [
+                            'status' => 200,
+                            'body' => [
+                                'message' => 'Roles retrieved.',
+                                'data' => [
+                                    ['id' => 1, 'name' => 'admin', 'description' => 'Full system access. Manages users, vendors, and platform settings.'],
+                                    ['id' => 2, 'name' => 'vendor', 'description' => 'Sells products on the platform. Manages own inventory and orders.'],
+                                    ['id' => 3, 'name' => 'customer', 'description' => 'Default role. Browses and purchases products.'],
+                                ],
+                            ],
+                        ],
+                        'error_responses' => [
+                            [
+                                'status' => 401,
+                                'description' => 'Unauthenticated',
+                                'body' => ['message' => 'Unauthenticated.'],
+                            ],
+                            [
+                                'status' => 403,
+                                'description' => 'Forbidden',
+                                'body' => ['message' => 'Forbidden. You do not have the required role.'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         return view('documentation', compact('endpoints'));

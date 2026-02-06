@@ -63,11 +63,7 @@ class AuthController extends Controller
         }
 
         $user = User::create($userData);
-
-        $customerRole = \App\Models\Role::where('name', 'customer')->first();
-        if ($customerRole) {
-            $user->roles()->attach($customerRole->id);
-        }
+        $user->assignRole('customer');
 
         cache()->forget("registration_data_{$request->email}");
 
@@ -92,10 +88,10 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $user = auth('api')->user();
+        $user = User::where('email', $request->email)->first();
 
-        if ($user->status !== 'active') {
-            JWTAuth::invalidate(JWTAuth::getToken());
+        if (! $user || $user->status !== 'active') {
+            JWTAuth::setToken($token)->invalidate();
 
             return response()->json([
                 'message' => 'Your account has been blocked. Please contact support.',
