@@ -43,10 +43,11 @@ class EmailService
     {
         $year = date('Y');
         $digits = str_split($otp);
-        $otpHtml = '';
+        $otpCells = '';
         foreach ($digits as $digit) {
-            $otpHtml .= "<span style='display:inline-block;width:42px;height:50px;line-height:50px;text-align:center;font-size:26px;font-weight:700;color:#0f172a;background:#fff7ed;border:2px solid #f97316;border-radius:8px;margin:0 3px;font-family:\"Courier New\",monospace;'>{$digit}</span>";
+            $otpCells .= "<td style='width:42px;height:50px;text-align:center;font-size:26px;font-weight:700;color:#0f172a;background:#fff7ed;border:2px solid #f97316;border-radius:8px;font-family:Courier New,monospace;padding:0;'>{$digit}</td><td style='width:6px;padding:0;'></td>";
         }
+        $otpHtml = "<table role='presentation' cellpadding='0' cellspacing='0' style='margin:0 auto;'><tr>{$otpCells}</tr></table>";
 
         return <<<HTML
         <!DOCTYPE html>
