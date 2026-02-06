@@ -107,15 +107,17 @@ if (! function_exists('syntaxHighlight')) {
             border-radius: var(--radius-sm);
             display: grid; place-items: center;
         }
-        .brand-text { font-size: 1.35rem; font-weight: 800; color: white; letter-spacing: -.02em; }
+        .brand-text { font-size: 1.35rem; font-weight: 800; color: white; letter-spacing: -.02em; display: flex; align-items: center; gap: .6rem; }
         .brand-text span { color: var(--accent); }
 
-        .header-meta { display: flex; align-items: center; gap: 1rem; }
         .version-badge {
-            font-size: .75rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
-            padding: .3rem .7rem; border-radius: 20px;
+            font-size: .65rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+            padding: .25rem .6rem; border-radius: 20px;
             background: rgba(255,255,255,.1); color: rgba(255,255,255,.8);
+            white-space: nowrap;
         }
+
+        .header-meta { display: flex; align-items: center; gap: 1rem; }
         .base-url-chip {
             font-family: var(--font-mono); font-size: .82rem; font-weight: 500;
             padding: .4rem 1rem; border-radius: var(--radius-sm);
@@ -502,8 +504,11 @@ if (! function_exists('syntaxHighlight')) {
         .code-block::-webkit-scrollbar-thumb { background: var(--navy-mid); border-radius: 4px; }
 
         @media (max-width: 640px) {
-            .header-inner { flex-direction: column; align-items: flex-start; padding: 1rem 1.25rem; }
-            .header-meta { flex-wrap: wrap; }
+            .header-inner { flex-wrap: wrap; padding: 1rem 1.25rem; }
+            .brand-text { font-size: 1.15rem; }
+            .version-badge { font-size: .6rem; padding: .2rem .5rem; }
+            .header-meta { width: 100%; }
+            .base-url-chip { font-size: .75rem; width: 100%; justify-content: center; }
             .intro-card { padding: 1.5rem; }
             .intro-card h1 { font-size: 1.3rem; }
             .ep-trigger { flex-direction: column; align-items: flex-start; gap: .6rem; }
@@ -533,10 +538,9 @@ if (! function_exists('syntaxHighlight')) {
             <div class="brand-icon">
                 <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0020 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
             </div>
-            <div class="brand-text">Nata<span>kahii</span></div>
+            <div class="brand-text">Nata<span>kahii</span> <span class="version-badge">v1.0</span></div>
         </a>
         <div class="header-meta">
-            <span class="version-badge">v1.0</span>
             <span class="base-url-chip" onclick="copyText('{{ url('/api/v1') }}', this)" title="Click to copy">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                 {{ url('/api/v1') }}
