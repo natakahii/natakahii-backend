@@ -11,7 +11,6 @@ use App\Models\User;
 use App\Services\EmailService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
@@ -25,15 +24,15 @@ class AuthController extends Controller
         $userData = [
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'password' => $request->password,
             'phone' => $request->phone,
             'status' => 'active',
         ];
-        
+
         cache()->put("registration_data_{$request->email}", $userData, now()->addMinutes(15));
-        
+
         $otp = OtpVerification::generateOtp($request->email, 'registration');
-        
+
         $this->emailService->sendOtp($request->email, $otp->otp, 'registration');
 
         return response()->json([
@@ -49,22 +48,22 @@ class AuthController extends Controller
             'otp' => ['required', 'string', 'size:6'],
         ]);
 
-        if (!OtpVerification::verify($request->email, $request->otp, 'registration')) {
+        if (! OtpVerification::verify($request->email, $request->otp, 'registration')) {
             return response()->json([
                 'message' => 'Invalid or expired OTP.',
             ], 422);
         }
 
         $userData = cache()->get("registration_data_{$request->email}");
-        
-        if (!$userData) {
+
+        if (! $userData) {
             return response()->json([
                 'message' => 'Registration data not found. Please start registration again.',
             ], 422);
         }
 
         $user = User::create($userData);
-        
+
         $customerRole = \App\Models\Role::where('name', 'customer')->first();
         if ($customerRole) {
             $user->roles()->attach($customerRole->id);
@@ -87,15 +86,17 @@ class AuthController extends Controller
     {
         $credentials = $request->only('email', 'password');
 
-        if (!$token = JWTAuth::attempt($credentials)) {
+        if (! $token = JWTAuth::attempt($credentials)) {
             return response()->json([
                 'message' => 'Invalid credentials.',
             ], 401);
         }
 
-        $user = auth()->user();
+        $user = auth('api')->user();
 
         if ($user->status !== 'active') {
+            JWTAuth::invalidate(JWTAuth::getToken());
+
             return response()->json([
                 'message' => 'Your account has been blocked. Please contact support.',
             ], 403);
@@ -103,7 +104,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Login successful.',
-            'user' => $user,
+            'user' => $user->load('roles'),
             'token' => $token,
             'token_type' => 'bearer',
             'expires_in' => config('jwt.ttl') * 60,
@@ -133,7 +134,7 @@ class AuthController extends Controller
     public function me(): JsonResponse
     {
         return response()->json([
-            'user' => auth()->user()->load('roles'),
+            'user' => auth('api')->user()->load('roles'),
         ], 200);
     }
 
@@ -144,7 +145,7 @@ class AuthController extends Controller
         ]);
 
         $otp = OtpVerification::generateOtp($request->email, 'password_reset');
-        
+
         $this->emailService->sendOtp($request->email, $otp->otp, 'password_reset');
 
         return response()->json([
@@ -154,7 +155,7 @@ class AuthController extends Controller
 
     public function resetPassword(PasswordResetRequest $request): JsonResponse
     {
-        if (!OtpVerification::verify($request->email, $request->otp, 'password_reset')) {
+        if (! OtpVerification::verify($request->email, $request->otp, 'password_reset')) {
             return response()->json([
                 'message' => 'Invalid or expired OTP.',
             ], 422);
@@ -162,7 +163,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
         $user->update([
-            'password' => Hash::make($request->password),
+            'password' => $request->password,
         ]);
 
         return response()->json([
@@ -178,7 +179,7 @@ class AuthController extends Controller
         ]);
 
         $otp = OtpVerification::generateOtp($request->email, $request->type);
-        
+
         $this->emailService->sendOtp($request->email, $otp->otp, $request->type);
 
         return response()->json([

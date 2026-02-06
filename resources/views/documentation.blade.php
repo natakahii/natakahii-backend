@@ -1,1058 +1,871 @@
+@php
+/**
+ * Syntax-highlight a JSON string with span classes.
+ */
+if (! function_exists('syntaxHighlight')) {
+    function syntaxHighlight(string $json): string {
+        $json = htmlspecialchars($json, ENT_QUOTES);
+        // Keys
+        $json = preg_replace('/&quot;([^&]+?)&quot;\s*:/', '<span class="json-key">&quot;$1&quot;</span>:', $json);
+        // String values
+        $json = preg_replace('/:\s*&quot;(.*?)&quot;/', ': <span class="json-string">&quot;$1&quot;</span>', $json);
+        // Numbers
+        $json = preg_replace('/:\s*(\d+)/', ': <span class="json-number">$1</span>', $json);
+        // Booleans
+        $json = preg_replace('/:\s*(true|false)/', ': <span class="json-bool">$1</span>', $json);
+        // Null
+        $json = preg_replace('/:\s*null/', ': <span class="json-null">null</span>', $json);
+        // Braces and brackets
+        $json = str_replace(['{', '}', '[', ']'], [
+            '<span class="json-brace">{</span>',
+            '<span class="json-brace">}</span>',
+            '<span class="json-brace">[</span>',
+            '<span class="json-brace">]</span>',
+        ], $json);
+        return $json;
+    }
+}
+@endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Natakahii API Documentation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --dark-blue: #1e3a8a;
-            --orange: #f97316;
-            --white: #ffffff;
-            --light-gray: #f8fafc;
-            --border-gray: #e2e8f0;
-            --success-green: #10b981;
-            --danger-red: #dc2626;
-            --warning-yellow: #f59e0b;
-            --text-dark: #1f2937;
-            --text-light: #6b7280;
+            --navy: #0f172a;
+            --navy-light: #1e293b;
+            --navy-mid: #334155;
+            --accent: #f97316;
+            --accent-hover: #ea580c;
+            --accent-soft: rgba(249, 115, 22, 0.1);
+            --green: #22c55e;
+            --green-soft: rgba(34, 197, 94, 0.1);
+            --blue: #3b82f6;
+            --blue-soft: rgba(59, 130, 246, 0.1);
+            --red: #ef4444;
+            --red-soft: rgba(239, 68, 68, 0.1);
+            --yellow: #eab308;
+            --yellow-soft: rgba(234, 179, 8, 0.1);
+            --purple: #a855f7;
+            --surface: #ffffff;
+            --surface-raised: #f8fafc;
+            --border: #e2e8f0;
+            --border-light: #f1f5f9;
+            --text: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-xs: 6px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: var(--font-sans);
+            background: var(--surface-raised);
+            color: var(--text);
             line-height: 1.6;
-            color: var(--text-dark);
-            background: var(--light-gray);
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Header Styles */
+        /* ── Header ───────────────────────────────────────── */
         .header {
-            background: linear-gradient(135deg, var(--dark-blue) 0%, #1e40af 100%);
-            color: var(--white);
-            padding: 2rem 0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .header::before {
-            content: '';
-            position: absolute;
+            background: var(--navy);
+            color: white;
+            position: sticky;
             top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23f97316' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
-            opacity: 0.3;
+            z-index: 100;
+            border-bottom: 3px solid var(--accent);
         }
 
-        .container {
-            max-width: 1200px;
+        .header-inner {
+            max-width: 1360px;
             margin: 0 auto;
-            padding: 0 1.5rem;
-        }
-
-        .header-content {
+            padding: 1rem 2rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 1rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .logo-container {
-            display: flex;
-            align-items: center;
             gap: 1rem;
         }
 
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--orange);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .brand { display: flex; align-items: center; gap: .75rem; text-decoration: none; }
+        .brand-icon {
+            width: 36px; height: 36px;
+            background: var(--accent);
+            border-radius: var(--radius-sm);
+            display: grid; place-items: center;
         }
+        .brand-text { font-size: 1.35rem; font-weight: 800; color: white; letter-spacing: -.02em; }
+        .brand-text span { color: var(--accent); }
 
-        .logo-text {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--white);
+        .header-meta { display: flex; align-items: center; gap: 1rem; }
+        .version-badge {
+            font-size: .75rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+            padding: .3rem .7rem; border-radius: 20px;
+            background: rgba(255,255,255,.1); color: rgba(255,255,255,.8);
         }
-
-        .logo-text span {
-            color: var(--orange);
+        .base-url-chip {
+            font-family: var(--font-mono); font-size: .82rem; font-weight: 500;
+            padding: .4rem 1rem; border-radius: var(--radius-sm);
+            background: rgba(255,255,255,.08); color: rgba(255,255,255,.85);
+            border: 1px solid rgba(255,255,255,.1);
+            cursor: pointer; transition: background .2s;
+            display: flex; align-items: center; gap: .5rem;
         }
+        .base-url-chip:hover { background: rgba(255,255,255,.14); }
+        .base-url-chip svg { width: 14px; height: 14px; opacity: .6; }
 
-        .header-info {
-            text-align: right;
-        }
-
-        .version {
-            background: rgba(255,255,255,0.2);
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            display: inline-block;
-            margin-bottom: 0.5rem;
-        }
-
-        .base-url {
-            background: rgba(0,0,0,0.2);
-            padding: 0.75rem 1.5rem;
-            border-radius: 12px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.95rem;
-            margin-top: 0.5rem;
-            display: inline-block;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        /* Main Content */
-        .main-content {
+        /* ── Layout ───────────────────────────────────────── */
+        .layout {
+            max-width: 1360px;
+            margin: 0 auto;
+            padding: 2rem;
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: 260px 1fr;
             gap: 2rem;
-            padding: 2rem 0;
+            align-items: start;
         }
 
-        @media (min-width: 992px) {
-            .main-content {
-                grid-template-columns: 280px 1fr;
-            }
+        @media (max-width: 1024px) {
+            .layout { grid-template-columns: 1fr; padding: 1.25rem; }
         }
 
-        /* Sidebar Navigation */
+        /* ── Sidebar ──────────────────────────────────────── */
         .sidebar {
-            position: sticky;
-            top: 2rem;
-            align-self: start;
-            background: var(--white);
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            max-height: calc(100vh - 4rem);
+            position: sticky; top: calc(68px + 1.5rem);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            max-height: calc(100vh - 100px);
             overflow-y: auto;
         }
 
-        .sidebar h3 {
-            color: var(--dark-blue);
-            margin-bottom: 1.5rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 2px solid var(--orange);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+        .sidebar-title {
+            font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+            color: var(--text-muted); margin-bottom: 1rem; padding: 0 .5rem;
         }
 
-        .nav-links {
-            list-style: none;
+        .nav-group { margin-bottom: 1.25rem; }
+        .nav-group-label {
+            font-size: .82rem; font-weight: 700; color: var(--text);
+            padding: .4rem .5rem; display: flex; align-items: center; gap: .5rem;
+        }
+        .nav-group-label::before {
+            content: ''; width: 3px; height: 14px; border-radius: 2px; background: var(--accent);
         }
 
-        .nav-item {
-            margin-bottom: 0.5rem;
+        .nav-items { list-style: none; margin-top: .35rem; }
+        .nav-items li a {
+            display: flex; align-items: center; gap: .6rem;
+            padding: .45rem .5rem .45rem 1.1rem;
+            font-size: .82rem; color: var(--text-secondary);
+            text-decoration: none; border-radius: var(--radius-xs);
+            transition: all .15s;
+        }
+        .nav-items li a:hover { background: var(--surface-raised); color: var(--text); }
+        .nav-items li a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+        .nav-method {
+            font-family: var(--font-mono); font-size: .65rem; font-weight: 700;
+            min-width: 34px; text-align: center; padding: .15rem .3rem;
+            border-radius: 4px; letter-spacing: .02em;
+        }
+        .nav-method.get { background: var(--green-soft); color: var(--green); }
+        .nav-method.post { background: var(--accent-soft); color: var(--accent); }
+        .nav-method.put { background: var(--blue-soft); color: var(--blue); }
+        .nav-method.delete { background: var(--red-soft); color: var(--red); }
+
+        @media (max-width: 1024px) {
+            .sidebar { display: none; position: fixed; top: 0; left: 0; width: 300px; height: 100vh; z-index: 200; border-radius: 0; }
+            .sidebar.open { display: block; }
+            .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 199; }
+            .mobile-overlay.open { display: block; }
         }
 
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1rem;
-            color: var(--text-dark);
-            text-decoration: none;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            border-left: 3px solid transparent;
+        .mobile-toggle {
+            display: none; position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 150;
+            width: 48px; height: 48px; border-radius: 50%; border: none;
+            background: var(--accent); color: white; cursor: pointer;
+            box-shadow: var(--shadow-lg);
         }
+        @media (max-width: 1024px) { .mobile-toggle { display: grid; place-items: center; } }
 
-        .nav-link:hover {
-            background: var(--light-gray);
-            color: var(--dark-blue);
-            border-left-color: var(--orange);
-        }
+        /* ── Content ──────────────────────────────────────── */
+        .content { min-width: 0; }
 
-        .nav-link.active {
-            background: var(--light-gray);
-            color: var(--dark-blue);
-            font-weight: 600;
-            border-left-color: var(--orange);
-        }
-
-        /* Content Area */
-        .content-area {
-            min-width: 0; /* Fix for flexbox overflow */
-        }
-
-        .intro {
-            background: var(--white);
+        /* Intro Card */
+        .intro-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
             padding: 2rem;
             margin-bottom: 2rem;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            border-left: 6px solid var(--orange);
+        }
+        .intro-card h1 {
+            font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em;
+            margin-bottom: .5rem;
+        }
+        .intro-card p { color: var(--text-secondary); font-size: .95rem; max-width: 640px; }
+
+        .info-banner {
+            margin-top: 1.5rem; padding: 1rem 1.25rem;
+            background: var(--yellow-soft); border: 1px solid rgba(234,179,8,.25);
+            border-radius: var(--radius-sm);
+            display: flex; align-items: flex-start; gap: .75rem;
+            font-size: .88rem; color: var(--text);
+        }
+        .info-banner svg { flex-shrink: 0; margin-top: 2px; color: var(--yellow); }
+        .info-banner code {
+            font-family: var(--font-mono); font-size: .82rem;
+            background: rgba(0,0,0,.06); padding: .15rem .45rem; border-radius: 4px;
         }
 
-        .intro h2 {
-            color: var(--dark-blue);
+        /* ── Endpoint Group ───────────────────────────────── */
+        .endpoint-group { margin-bottom: 2.5rem; }
+        .group-heading {
+            display: flex; align-items: center; gap: .75rem;
+            margin-bottom: 1rem; padding-bottom: .75rem;
+            border-bottom: 2px solid var(--border);
+        }
+        .group-heading-icon {
+            width: 36px; height: 36px; border-radius: var(--radius-sm);
+            background: var(--navy); color: white;
+            display: grid; place-items: center; flex-shrink: 0;
+        }
+        .group-heading h2 { font-size: 1.2rem; font-weight: 700; }
+        .group-heading p { font-size: .85rem; color: var(--text-secondary); }
+
+        /* ── Endpoint Card ────────────────────────────────── */
+        .ep-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
             margin-bottom: 1rem;
-            font-size: 1.75rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .intro p {
-            color: var(--text-light);
-            margin-bottom: 1.5rem;
-            font-size: 1.05rem;
-        }
-
-        .auth-note {
-            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-            border: 1px solid #fcd34d;
-            padding: 1.25rem;
-            border-radius: 12px;
-            margin-top: 1.5rem;
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-        }
-
-        .auth-icon {
-            flex-shrink: 0;
-            background: var(--warning-yellow);
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .auth-note-content h4 {
-            color: var(--dark-blue);
-            margin-bottom: 0.5rem;
-            font-size: 1.1rem;
-        }
-
-        /* Endpoint Groups */
-        .endpoint-group {
-            background: var(--white);
-            border-radius: 16px;
             overflow: hidden;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            transition: box-shadow .2s;
+        }
+        .ep-card:hover { box-shadow: var(--shadow-md); }
+        .ep-card.open { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--shadow-md); }
+
+        .ep-trigger {
+            width: 100%; background: none; border: none; cursor: pointer;
+            padding: 1rem 1.25rem;
+            display: flex; align-items: center; gap: 1rem;
+            text-align: left; font-family: inherit;
         }
 
-        .group-header {
-            background: linear-gradient(135deg, var(--dark-blue) 0%, #1e40af 100%);
-            color: var(--white);
-            padding: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
+        .method-pill {
+            font-family: var(--font-mono); font-size: .75rem; font-weight: 700;
+            padding: .35rem .7rem; border-radius: var(--radius-xs);
+            min-width: 54px; text-align: center; color: white; flex-shrink: 0;
         }
+        .method-pill.get { background: var(--green); }
+        .method-pill.post { background: var(--accent); }
+        .method-pill.put { background: var(--blue); }
+        .method-pill.delete { background: var(--red); }
 
-        .group-icon {
-            flex-shrink: 0;
-            width: 48px;
-            height: 48px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .ep-meta { flex: 1; min-width: 0; }
+        .ep-title {
+            font-size: .95rem; font-weight: 600; color: var(--text);
+            display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
         }
-
-        .group-title {
-            font-size: 1.5rem;
-            font-weight: 700;
+        .ep-url {
+            font-family: var(--font-mono); font-size: .82rem; color: var(--text-secondary);
+            margin-top: .25rem; word-break: break-all;
         }
+        .ep-desc { font-size: .82rem; color: var(--text-muted); margin-top: .2rem; }
 
-        .group-description {
-            font-size: 0.95rem;
-            opacity: 0.9;
-            margin-top: 0.25rem;
+        .auth-chip {
+            font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+            padding: .2rem .55rem; border-radius: 4px;
+            background: var(--red-soft); color: var(--red);
+            display: inline-flex; align-items: center; gap: .25rem;
         }
+        .auth-chip svg { width: 10px; height: 10px; }
 
-        /* Endpoint Cards */
-        .endpoint-card {
-            border-bottom: 1px solid var(--border-gray);
-            transition: background-color 0.3s ease;
+        .ep-chevron {
+            width: 20px; height: 20px; color: var(--text-muted);
+            transition: transform .25s; flex-shrink: 0;
         }
+        .ep-card.open .ep-chevron { transform: rotate(180deg); color: var(--accent); }
 
-        .endpoint-card:last-child {
-            border-bottom: none;
-        }
-
-        .endpoint-card:hover {
-            background: #fef9f3;
-        }
-
-        .endpoint-header {
-            padding: 1.5rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-        }
-
-        .endpoint-info {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex: 1;
-            min-width: 0;
-        }
-
-        @media (max-width: 768px) {
-            .endpoint-info {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.75rem;
-            }
-        }
-
-        .method-badge {
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            min-width: 70px;
-            text-align: center;
-            flex-shrink: 0;
-        }
-
-        .method-post {
-            background: var(--orange);
-            color: var(--white);
-        }
-
-        .method-get {
-            background: var(--success-green);
-            color: var(--white);
-        }
-
-        .method-put {
-            background: var(--warning-yellow);
-            color: var(--white);
-        }
-
-        .method-delete {
-            background: var(--danger-red);
-            color: var(--white);
-        }
-
-        .endpoint-details {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .endpoint-name {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-dark);
-            margin-bottom: 0.25rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .endpoint-url {
-            font-family: 'Courier New', monospace;
-            color: var(--dark-blue);
-            font-size: 0.9rem;
-            word-break: break-all;
-            background: var(--light-gray);
-            padding: 0.5rem 0.75rem;
-            border-radius: 6px;
-            margin-top: 0.5rem;
-            display: inline-block;
-        }
-
-        .auth-badge {
-            background: var(--danger-red);
-            color: var(--white);
-            padding: 0.3rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-            margin-left: 0.5rem;
-        }
-
-        .endpoint-description {
-            color: var(--text-light);
-            margin-top: 0.5rem;
-            font-size: 0.95rem;
-        }
-
-        .toggle-icon {
-            transition: transform 0.3s ease;
-            color: var(--orange);
-            flex-shrink: 0;
-        }
-
-        .toggle-icon.active {
-            transform: rotate(180deg);
-        }
-
-        .endpoint-body {
-            padding: 0 1.5rem 1.5rem 1.5rem;
+        /* ── Endpoint Detail Panel ────────────────────────── */
+        .ep-panel {
             display: none;
+            border-top: 1px solid var(--border);
+            padding: 1.5rem 1.25rem;
+            background: var(--surface-raised);
+        }
+        .ep-card.open .ep-panel { display: block; animation: fadeSlide .25s ease-out; }
+
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .endpoint-body.active {
-            display: block;
-            animation: slideDown 0.3s ease-out;
+        /* Section Labels */
+        .section-label {
+            font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+            color: var(--text-muted); margin-bottom: .75rem; margin-top: 1.5rem;
+            display: flex; align-items: center; gap: .5rem;
         }
+        .section-label:first-child { margin-top: 0; }
+        .section-label svg { width: 14px; height: 14px; }
 
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        /* ── Headers Table ────────────────────────────────── */
+        .headers-table {
+            width: 100%; border-collapse: collapse;
+            font-size: .85rem; margin-bottom: .5rem;
         }
-
-        .section-title {
-            color: var(--dark-blue);
-            font-weight: 600;
-            margin: 1.5rem 0 1rem;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
+        .headers-table th {
+            text-align: left; font-size: .72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .06em; color: var(--text-muted); padding: .5rem .75rem;
+            border-bottom: 1px solid var(--border);
         }
-
-        .section-title::before {
-            content: '';
-            width: 6px;
-            height: 24px;
-            background: var(--orange);
-            border-radius: 3px;
-        }
-
-        /* Tables */
-        .param-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            margin: 1rem 0;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
-        .param-table th {
-            background: var(--dark-blue);
-            color: var(--white);
-            padding: 1rem;
-            text-align: left;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .param-table td {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border-gray);
+        .headers-table td {
+            padding: .6rem .75rem; border-bottom: 1px solid var(--border-light);
             vertical-align: top;
         }
+        .headers-table tr:last-child td { border-bottom: none; }
 
-        .param-table tr:last-child td {
-            border-bottom: none;
+        /* ── Params Table ─────────────────────────────────── */
+        .params-table {
+            width: 100%; border-collapse: collapse; font-size: .85rem;
+        }
+        .params-table th {
+            text-align: left; font-size: .72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .06em; color: var(--text-muted); padding: .6rem .75rem;
+            background: var(--surface); border-bottom: 2px solid var(--border);
+        }
+        .params-table td {
+            padding: .7rem .75rem;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: top;
+        }
+        .params-table tr:last-child td { border-bottom: none; }
+        .params-table tr:hover td { background: rgba(0,0,0,.015); }
+
+        .param-name-cell {
+            display: flex; align-items: center; gap: .4rem;
+        }
+        .param-name-text {
+            font-family: var(--font-mono); font-size: .82rem; font-weight: 600;
+            color: var(--navy); background: var(--surface-raised);
+            padding: .2rem .5rem; border-radius: 4px; border: 1px solid var(--border);
+        }
+        .copy-btn {
+            background: none; border: none; cursor: pointer; padding: 2px;
+            color: var(--text-muted); border-radius: 4px; transition: all .15s;
+            display: inline-flex; align-items: center;
+        }
+        .copy-btn:hover { color: var(--accent); background: var(--accent-soft); }
+        .copy-btn svg { width: 13px; height: 13px; }
+        .copy-btn.copied { color: var(--green); }
+
+        .type-badge {
+            font-size: .72rem; font-weight: 600; padding: .15rem .5rem;
+            border-radius: 4px; text-transform: lowercase;
+            background: var(--blue-soft); color: var(--blue);
         }
 
-        .param-table tr:hover {
-            background: var(--light-gray);
+        .required-dot {
+            display: inline-block; width: 6px; height: 6px;
+            border-radius: 50%; background: var(--red); margin-left: .25rem;
+            vertical-align: middle;
         }
+        .optional-text { font-size: .72rem; color: var(--text-muted); font-style: italic; }
 
-        .param-name {
-            font-family: 'Courier New', monospace;
-            color: var(--dark-blue);
-            font-weight: 600;
-            font-size: 0.9rem;
+        .rules-text {
+            font-family: var(--font-mono); font-size: .75rem; color: var(--text-secondary);
         }
+        .param-desc { font-size: .8rem; color: var(--text-secondary); margin-top: .25rem; }
 
-        /* Code Blocks */
+        /* ── Code Block ───────────────────────────────────── */
+        .code-wrapper {
+            position: relative; margin-top: .5rem; margin-bottom: .5rem;
+            border-radius: var(--radius-sm); overflow: hidden;
+            border: 1px solid var(--navy-mid);
+        }
+        .code-toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: .4rem .75rem;
+            background: var(--navy-mid); font-size: .7rem;
+        }
+        .code-lang {
+            font-family: var(--font-mono); font-weight: 600; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: .06em;
+        }
+        .code-copy-btn {
+            background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1);
+            color: rgba(255,255,255,.65); padding: .25rem .6rem;
+            border-radius: 4px; cursor: pointer; font-size: .72rem;
+            font-family: var(--font-sans); font-weight: 500;
+            display: flex; align-items: center; gap: .3rem; transition: all .15s;
+        }
+        .code-copy-btn:hover { background: rgba(255,255,255,.15); color: white; }
+        .code-copy-btn.copied { background: var(--green-soft); color: var(--green); border-color: transparent; }
+        .code-copy-btn svg { width: 12px; height: 12px; }
+
         .code-block {
-            background: #1e293b;
-            color: #e2e8f0;
-            padding: 1.5rem;
-            border-radius: 12px;
+            background: var(--navy);
+            padding: 1rem 1.25rem;
             overflow-x: auto;
-            margin: 1rem 0;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
-            line-height: 1.6;
-            position: relative;
+            font-family: var(--font-mono);
+            font-size: .82rem;
+            line-height: 1.7;
+            color: #e2e8f0;
         }
+        .code-block pre { margin: 0; white-space: pre; }
 
-        .code-block::before {
-            content: 'JSON';
-            position: absolute;
-            top: 0.5rem;
-            right: 1rem;
-            font-size: 0.75rem;
-            color: #94a3b8;
-            font-weight: 600;
+        /* JSON Syntax Colors */
+        .json-key { color: #7dd3fc; }
+        .json-string { color: #86efac; }
+        .json-number { color: #fbbf24; }
+        .json-bool { color: #c084fc; }
+        .json-null { color: #f87171; }
+        .json-brace { color: #94a3b8; }
+
+        /* ── Response Tabs ────────────────────────────────── */
+        .response-tabs {
+            display: flex; gap: .25rem; margin-bottom: .5rem;
         }
-
-        .code-block pre {
-            margin: 0;
-            white-space: pre-wrap;
-            word-break: break-all;
+        .response-tab {
+            font-family: var(--font-sans); font-size: .78rem; font-weight: 600;
+            padding: .4rem .85rem; border-radius: var(--radius-xs);
+            border: 1px solid var(--border); background: var(--surface);
+            color: var(--text-secondary); cursor: pointer; transition: all .15s;
+            display: flex; align-items: center; gap: .35rem;
         }
+        .response-tab:hover { border-color: var(--text-muted); }
+        .response-tab.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+        .response-tab .status-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+        }
+        .response-tab .status-dot.success { background: var(--green); }
+        .response-tab .status-dot.error { background: var(--red); }
 
-        /* Footer */
+        .response-panel { display: none; }
+        .response-panel.active { display: block; }
+
+        .status-badge {
+            display: inline-flex; align-items: center; gap: .3rem;
+            font-family: var(--font-mono); font-size: .75rem; font-weight: 700;
+            padding: .2rem .55rem; border-radius: 4px; margin-bottom: .4rem;
+        }
+        .status-badge.s2xx { background: var(--green-soft); color: var(--green); }
+        .status-badge.s4xx { background: var(--red-soft); color: var(--red); }
+
+        .error-desc { font-size: .82rem; color: var(--text-secondary); margin-bottom: .5rem; }
+
+        /* ── Footer ───────────────────────────────────────── */
         .footer {
-            background: var(--dark-blue);
-            color: var(--white);
-            padding: 3rem 0 2rem;
-            margin-top: 3rem;
-            text-align: center;
+            background: var(--navy); color: rgba(255,255,255,.6);
+            text-align: center; padding: 2.5rem 2rem;
+            margin-top: 2rem; font-size: .85rem;
         }
+        .footer-brand { display: flex; align-items: center; justify-content: center; gap: .5rem; margin-bottom: .75rem; }
+        .footer-brand span { font-size: 1.15rem; font-weight: 700; color: white; }
+        .footer-brand span em { font-style: normal; color: var(--accent); }
+        .footer-divider { width: 40px; height: 2px; background: var(--accent); margin: 1rem auto; border-radius: 1px; }
 
-        .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 1.5rem;
+        /* ── Toast Notification ───────────────────────────── */
+        .toast {
+            position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: var(--navy); color: white; padding: .6rem 1.25rem;
+            border-radius: var(--radius-sm); font-size: .82rem; font-weight: 500;
+            box-shadow: var(--shadow-lg); z-index: 300; opacity: 0;
+            transition: transform .3s, opacity .3s;
+            display: flex; align-items: center; gap: .5rem;
         }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast svg { color: var(--green); width: 16px; height: 16px; }
 
-        .footer-logo {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-        }
+        /* Scrollbar */
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-        .footer-logo .logo-icon {
-            width: 32px;
-            height: 32px;
-        }
+        .code-block::-webkit-scrollbar { height: 4px; }
+        .code-block::-webkit-scrollbar-track { background: transparent; }
+        .code-block::-webkit-scrollbar-thumb { background: var(--navy-mid); border-radius: 4px; }
 
-        .footer-text {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .footer-text span {
-            color: var(--orange);
-        }
-
-        .copyright {
-            opacity: 0.8;
-            margin-top: 1rem;
-            font-size: 0.9rem;
-        }
-
-        .footer-stack {
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            font-size: 0.85rem;
-            opacity: 0.7;
-        }
-
-        /* Mobile Menu Toggle */
-        .mobile-menu-toggle {
-            display: none;
-            background: var(--orange);
-            color: white;
-            border: none;
-            padding: 0.75rem;
-            border-radius: 8px;
-            cursor: pointer;
-            align-items: center;
-            gap: 0.5rem;
-            font-weight: 600;
-        }
-
-        @media (max-width: 991px) {
-            .mobile-menu-toggle {
-                display: flex;
-            }
-            
-            .sidebar {
-                position: fixed;
-                top: 0;
-                left: -300px;
-                width: 280px;
-                height: 100vh;
-                z-index: 1000;
-                transition: left 0.3s ease;
-                border-radius: 0;
-                margin: 0;
-            }
-            
-            .sidebar.active {
-                left: 0;
-            }
-            
-            .overlay {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0,0,0,0.5);
-                z-index: 999;
-            }
-            
-            .overlay.active {
-                display: block;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .header-content {
-                flex-direction: column;
-                text-align: center;
-                gap: 1.5rem;
-            }
-            
-            .header-info {
-                text-align: center;
-            }
-            
-            .logo-container {
-                justify-content: center;
-            }
-            
-            .base-url {
-                font-size: 0.85rem;
-                padding: 0.5rem 1rem;
-            }
-            
-            .param-table {
-                display: block;
-                overflow-x: auto;
-            }
-            
-            .intro {
-                padding: 1.5rem;
-            }
-            
-            .endpoint-header {
-                padding: 1.25rem;
-            }
-            
-            .endpoint-body {
-                padding: 0 1.25rem 1.25rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 0 1rem;
-            }
-            
-            .method-badge {
-                min-width: 60px;
-                padding: 0.4rem 0.75rem;
-                font-size: 0.8rem;
-            }
-            
-            .auth-note {
-                flex-direction: column;
-                gap: 0.75rem;
-            }
-            
-            .code-block {
-                padding: 1rem;
-                font-size: 0.85rem;
-            }
-        }
-
-        /* Utility Classes */
-        .icon {
-            width: 20px;
-            height: 20px;
-            fill: currentColor;
-        }
-
-        .icon-sm {
-            width: 16px;
-            height: 16px;
-        }
-
-        .icon-lg {
-            width: 24px;
-            height: 24px;
-        }
-
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
+        @media (max-width: 640px) {
+            .header-inner { flex-direction: column; align-items: flex-start; padding: 1rem 1.25rem; }
+            .header-meta { flex-wrap: wrap; }
+            .intro-card { padding: 1.5rem; }
+            .intro-card h1 { font-size: 1.3rem; }
+            .ep-trigger { flex-direction: column; align-items: flex-start; gap: .6rem; }
+            .method-pill { align-self: flex-start; }
+            .params-table { display: block; overflow-x: auto; }
         }
     </style>
 </head>
 <body>
-    <!-- Mobile Menu Toggle -->
-    <button class="mobile-menu-toggle" id="menuToggle">
-        <svg class="icon" viewBox="0 0 24 24">
-            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
-        </svg>
-        Menu
-    </button>
 
-    <!-- Overlay for Mobile -->
-    <div class="overlay" id="overlay"></div>
+<!-- Toast -->
+<div class="toast" id="toast">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    <span id="toastText">Copied!</span>
+</div>
 
-    <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <div class="logo-container">
-                    <div class="logo-icon">
-                        <svg viewBox="0 0 24 24" fill="white" width="24" height="24">
-                            <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
-                        </svg>
-                    </div>
-                    <div class="logo-text">Nata<span>kahii</span></div>
-                </div>
-                <div class="header-info">
-                    <div class="version">v1.0.0</div>
-                    <div class="base-url">{{ url('/api') }}</div>
-                </div>
+<!-- Mobile Toggle -->
+<button class="mobile-toggle" id="mobileToggle" aria-label="Toggle navigation">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+<div class="mobile-overlay" id="mobileOverlay"></div>
+
+<!-- Header -->
+<header class="header">
+    <div class="header-inner">
+        <a href="#" class="brand">
+            <div class="brand-icon">
+                <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0020 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
             </div>
-        </div>
-    </header>
-
-    <div class="container">
-        <div class="main-content">
-            <!-- Sidebar Navigation -->
-            <nav class="sidebar" id="sidebar">
-                <h3>
-                    <svg class="icon icon-lg" viewBox="0 0 24 24">
-                        <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
-                    </svg>
-                    API Endpoints
-                </h3>
-                <ul class="nav-links" id="navLinks">
-                    <!-- Navigation links will be generated by JavaScript -->
-                </ul>
-            </nav>
-
-            <!-- Main Content Area -->
-            <div class="content-area">
-                <div class="intro">
-                    <h2>
-                        <svg class="icon icon-lg" viewBox="0 0 24 24">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
-                        </svg>
-                        Welcome to Natakahii API Documentation
-                    </h2>
-                    <p>This documentation provides comprehensive information about all available API endpoints, request formats, and response structures. Our API uses JWT (JSON Web Tokens) for authentication and follows RESTful principles.</p>
-                    
-                    <div class="auth-note">
-                        <div class="auth-icon">
-                            <svg class="icon" fill="white" viewBox="0 0 24 24">
-                                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-                            </svg>
-                        </div>
-                        <div class="auth-note-content">
-                            <h4>Authentication Required</h4>
-                            <p>Endpoints marked with <span class="auth-badge">
-                                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-                                </svg>
-                                Auth Required
-                            </span> need a valid JWT token in the Authorization header:</p>
-                            <div class="code-block" style="margin-top: 0.75rem;">
-                                <pre>Authorization: Bearer YOUR_JWT_TOKEN</pre>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Dynamic Content -->
-                @foreach($endpoints as $group)
-                    <div class="endpoint-group" id="group-{{ Str::slug($group['group']) }}">
-                        <div class="group-header">
-                            <div class="group-icon">
-                                @if($group['group'] == 'Authentication')
-                                    <svg class="icon icon-lg" fill="white" viewBox="0 0 24 24">
-                                        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2z"/>
-                                    </svg>
-                                @elseif($group['group'] == 'Products')
-                                    <svg class="icon icon-lg" fill="white" viewBox="0 0 24 24">
-                                        <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
-                                    </svg>
-                                @elseif($group['group'] == 'Users')
-                                    <svg class="icon icon-lg" fill="white" viewBox="0 0 24 24">
-                                        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
-                                    </svg>
-                                @else
-                                    <svg class="icon icon-lg" fill="white" viewBox="0 0 24 24">
-                                        <path d="M4 6h18V4H4c-1.1 0-2 .9-2 2v11H0v3h14v-3H4V6zm19 2h-6c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V9c0-.55-.45-1-1-1zm-1 9h-4v-7h4v7z"/>
-                                    </svg>
-                                @endif
-                            </div>
-                            <div>
-                                <div class="group-title">{{ $group['group'] }}</div>
-                                <div class="group-description">{{ $group['description'] ?? 'API endpoints for ' . $group['group'] }}</div>
-                            </div>
-                        </div>
-                        
-                        @foreach($group['endpoints'] as $endpoint)
-                            <div class="endpoint-card">
-                                <div class="endpoint-header" onclick="toggleEndpoint(this)" data-group="{{ Str::slug($group['group']) }}">
-                                    <div class="endpoint-info">
-                                        <span class="method-badge method-{{ strtolower($endpoint['method']) }}">
-                                            {{ $endpoint['method'] }}
-                                        </span>
-                                        <div class="endpoint-details">
-                                            <div class="endpoint-name">
-                                                {{ $endpoint['name'] }}
-                                                @if($endpoint['auth_required'])
-                                                    <span class="auth-badge">
-                                                        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="currentColor">
-                                                            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2z"/>
-                                                        </svg>
-                                                        Auth Required
-                                                    </span>
-                                                @endif
-                                            </div>
-                                            <div class="endpoint-url">{{ $endpoint['url'] }}</div>
-                                            <div class="endpoint-description">{{ $endpoint['description'] }}</div>
-                                        </div>
-                                    </div>
-                                    <span class="toggle-icon">
-                                        <svg class="icon" viewBox="0 0 24 24">
-                                            <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
-                                        </svg>
-                                    </span>
-                                </div>
-                                
-                                <div class="endpoint-body">
-                                    @if(count($endpoint['request']) > 0)
-                                        <div class="section-title">
-                                            <svg class="icon" viewBox="0 0 24 24">
-                                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
-                                            </svg>
-                                            Request Parameters
-                                        </div>
-                                        <table class="param-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Parameter</th>
-                                                    <th>Type</th>
-                                                    <th>Validation Rules</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach($endpoint['request'] as $param => $rules)
-                                                    <tr>
-                                                        <td class="param-name">{{ $param }}</td>
-                                                        <td>
-                                                            @if(str_contains(strtolower($rules), 'string')) String
-                                                            @elseif(str_contains(strtolower($rules), 'integer')) Integer
-                                                            @elseif(str_contains(strtolower($rules), 'boolean')) Boolean
-                                                            @elseif(str_contains(strtolower($rules), 'array')) Array
-                                                            @elseif(str_contains(strtolower($rules), 'email')) Email
-                                                            @elseif(str_contains(strtolower($rules), 'password')) Password
-                                                            @else String
-                                                            @endif
-                                                        </td>
-                                                        <td>{{ $rules }}</td>
-                                                    </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    @endif
-
-                                    <div class="section-title">
-                                        <svg class="icon" viewBox="0 0 24 24">
-                                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
-                                        </svg>
-                                        Response Example
-                                    </div>
-                                    <div class="code-block">
-                                        <pre>{{ json_encode($endpoint['response'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @endforeach
-            </div>
+            <div class="brand-text">Nata<span>kahii</span></div>
+        </a>
+        <div class="header-meta">
+            <span class="version-badge">v1.0</span>
+            <span class="base-url-chip" onclick="copyText('{{ url('/api/v1') }}', this)" title="Click to copy">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                {{ url('/api/v1') }}
+            </span>
         </div>
     </div>
+</header>
 
-    <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-logo">
-                <div class="logo-icon">
-                    <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
-                        <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
-                    </svg>
-                </div>
-                <div class="footer-text">Nata<span>kahii</span></div>
+<div class="layout">
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-title">Navigation</div>
+        @foreach($endpoints as $group)
+            <div class="nav-group">
+                <div class="nav-group-label">{{ $group['group'] }}</div>
+                <ul class="nav-items">
+                    @foreach($group['endpoints'] as $ep)
+                        <li>
+                            <a href="#{{ Str::slug($ep['name']) }}" onclick="closeMobile()">
+                                <span class="nav-method {{ strtolower($ep['method']) }}">{{ $ep['method'] }}</span>
+                                {{ $ep['name'] }}
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
             </div>
-            <p class="copyright">&copy; {{ date('Y') }} Natakahii. All rights reserved.</p>
-            <p class="footer-stack">Built with Laravel & JWT Authentication</p>
+        @endforeach
+    </nav>
+
+    <!-- Content -->
+    <main class="content">
+        <!-- Intro -->
+        <div class="intro-card">
+            <h1>API Reference</h1>
+            <p>Complete reference for the Natakahii REST API. All endpoints accept and return JSON. Use the navigation to jump to any endpoint.</p>
+
+            <div class="info-banner">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <div>
+                    <strong>Authentication</strong> — Endpoints marked with a red <strong>AUTH</strong> chip require a valid JWT token.
+                    Include it as <code>Authorization: Bearer &lt;token&gt;</code> in every authenticated request.
+                </div>
+            </div>
         </div>
-    </footer>
 
-    <script>
-        // Toggle endpoint details
-        function toggleEndpoint(header) {
-            const body = header.parentElement.querySelector('.endpoint-body');
-            const icon = header.querySelector('.toggle-icon');
-            
-            body.classList.toggle('active');
-            icon.classList.toggle('active');
-            
-            // Close other open endpoints in the same group
-            const group = header.getAttribute('data-group');
-            const groupElement = document.getElementById(`group-${group}`);
-            const allEndpoints = groupElement.querySelectorAll('.endpoint-header');
-            
-            allEndpoints.forEach(otherHeader => {
-                if (otherHeader !== header) {
-                    const otherBody = otherHeader.parentElement.querySelector('.endpoint-body');
-                    const otherIcon = otherHeader.querySelector('.toggle-icon');
-                    if (otherBody.classList.contains('active')) {
-                        otherBody.classList.remove('active');
-                        otherIcon.classList.remove('active');
-                    }
-                }
-            });
-        }
+        @foreach($endpoints as $group)
+            <section class="endpoint-group" id="group-{{ Str::slug($group['group']) }}">
+                <div class="group-heading">
+                    <div class="group-heading-icon">
+                        @if($group['group'] === 'Authentication')
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                        @else
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                        @endif
+                    </div>
+                    <div>
+                        <h2>{{ $group['group'] }}</h2>
+                        <p>{{ $group['description'] ?? '' }}</p>
+                    </div>
+                </div>
 
-        // Generate navigation links
-        function generateNavigation() {
-            const groups = document.querySelectorAll('.endpoint-group');
-            const navLinks = document.getElementById('navLinks');
-            
-            groups.forEach(group => {
-                const groupId = group.id;
-                const groupTitle = group.querySelector('.group-title').textContent;
-                const groupIcon = group.querySelector('.group-icon svg').outerHTML;
-                
-                // Create group link
-                const li = document.createElement('li');
-                li.className = 'nav-item';
-                li.innerHTML = `
-                    <a href="#${groupId}" class="nav-link" onclick="closeMobileMenu()">
-                        ${groupIcon}
-                        <span>${groupTitle}</span>
-                    </a>
-                `;
-                navLinks.appendChild(li);
-            });
-        }
+                @foreach($group['endpoints'] as $epIndex => $ep)
+                    <div class="ep-card" id="{{ Str::slug($ep['name']) }}">
+                        <button class="ep-trigger" onclick="toggleCard(this)">
+                            <span class="method-pill {{ strtolower($ep['method']) }}">{{ $ep['method'] }}</span>
+                            <div class="ep-meta">
+                                <div class="ep-title">
+                                    {{ $ep['name'] }}
+                                    @if($ep['auth_required'])
+                                        <span class="auth-chip">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V10a2 2 0 00-2-2z"/></svg>
+                                            Auth
+                                        </span>
+                                    @endif
+                                </div>
+                                <div class="ep-url">{{ $ep['url'] }}</div>
+                                <div class="ep-desc">{{ $ep['description'] }}</div>
+                            </div>
+                            <svg class="ep-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
 
-        // Mobile menu functionality
-        const menuToggle = document.getElementById('menuToggle');
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
+                        <div class="ep-panel">
+                            {{-- Headers --}}
+                            @if(!empty($ep['headers']))
+                                <div class="section-label">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                                    Headers
+                                </div>
+                                <table class="headers-table">
+                                    <thead><tr><th>Header</th><th>Value</th></tr></thead>
+                                    <tbody>
+                                        @foreach($ep['headers'] as $hName => $hValue)
+                                            <tr>
+                                                <td>
+                                                    <span class="param-name-cell">
+                                                        <span class="param-name-text">{{ $hName }}</span>
+                                                        <button class="copy-btn" onclick="event.stopPropagation(); copyText('{{ $hName }}', this)" title="Copy">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                                                        </button>
+                                                    </span>
+                                                </td>
+                                                <td><code style="font-family:var(--font-mono);font-size:.82rem;color:var(--text-secondary)">{{ $hValue }}</code></td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            @endif
 
-        function toggleMobileMenu() {
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-            document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
-        }
+                            {{-- Request Parameters --}}
+                            @if(count($ep['request']) > 0)
+                                <div class="section-label">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                    Request Body <span style="font-weight:400;color:var(--text-muted);text-transform:none;letter-spacing:0;margin-left:.25rem">application/json</span>
+                                </div>
+                                <div style="overflow-x:auto">
+                                    <table class="params-table">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:28%">Parameter</th>
+                                                <th style="width:12%">Type</th>
+                                                <th style="width:10%">Required</th>
+                                                <th style="width:22%">Rules</th>
+                                                <th>Description</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($ep['request'] as $param)
+                                                <tr>
+                                                    <td>
+                                                        <span class="param-name-cell">
+                                                            <span class="param-name-text">{{ $param['name'] }}</span>
+                                                            <button class="copy-btn" onclick="event.stopPropagation(); copyText('{{ $param['name'] }}', this)" title="Copy parameter name">
+                                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                                                            </button>
+                                                        </span>
+                                                    </td>
+                                                    <td><span class="type-badge">{{ $param['type'] }}</span></td>
+                                                    <td>
+                                                        @if($param['required'])
+                                                            <span style="color:var(--red);font-size:.78rem;font-weight:600">Yes <span class="required-dot"></span></span>
+                                                        @else
+                                                            <span class="optional-text">Optional</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if($param['rules'])
+                                                            <span class="rules-text">{{ $param['rules'] }}</span>
+                                                        @else
+                                                            <span style="color:var(--text-muted)">—</span>
+                                                        @endif
+                                                    </td>
+                                                    <td><span class="param-desc">{{ $param['description'] }}</span></td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
 
-        function closeMobileMenu() {
-            sidebar.classList.remove('active');
-            overlay.classList.remove('active');
-            document.body.style.overflow = '';
-        }
+                            {{-- Responses --}}
+                            <div class="section-label" style="margin-top:1.5rem">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                Responses
+                            </div>
 
-        menuToggle.addEventListener('click', toggleMobileMenu);
-        overlay.addEventListener('click', closeMobileMenu);
+                            @php
+                                $cardId = Str::slug($ep['name']);
+                                $hasErrors = !empty($ep['error_responses']);
+                            @endphp
 
-        // Smooth scrolling for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const targetId = this.getAttribute('href');
-                if (targetId === '#') return;
-                
-                const targetElement = document.querySelector(targetId);
-                if (targetElement) {
-                    window.scrollTo({
-                        top: targetElement.offsetTop - 20,
-                        behavior: 'smooth'
-                    });
-                }
-            });
-        });
+                            <div class="response-tabs">
+                                <button class="response-tab active" onclick="switchTab(this, '{{ $cardId }}-success')">
+                                    <span class="status-dot success"></span>
+                                    {{ $ep['success_response']['status'] }} Success
+                                </button>
+                                @if($hasErrors)
+                                    @foreach($ep['error_responses'] as $errIdx => $err)
+                                        <button class="response-tab" onclick="switchTab(this, '{{ $cardId }}-error-{{ $errIdx }}')">
+                                            <span class="status-dot error"></span>
+                                            {{ $err['status'] }} {{ $err['description'] }}
+                                        </button>
+                                    @endforeach
+                                @endif
+                            </div>
 
-        // Initialize navigation and add active class to current section
-        document.addEventListener('DOMContentLoaded', function() {
-            generateNavigation();
-            
-            // Set first nav link as active
-            const firstNavLink = document.querySelector('.nav-link');
-            if (firstNavLink) {
-                firstNavLink.classList.add('active');
+                            {{-- Success Response --}}
+                            <div class="response-panel active" id="{{ $cardId }}-success">
+                                <span class="status-badge s2xx">{{ $ep['success_response']['status'] }} OK</span>
+                                @php $json = json_encode($ep['success_response']['body'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES); @endphp
+                                <div class="code-wrapper">
+                                    <div class="code-toolbar">
+                                        <span class="code-lang">JSON</span>
+                                        <button class="code-copy-btn" onclick="copyCode(this)" data-code="{{ htmlspecialchars($json) }}">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                                            Copy
+                                        </button>
+                                    </div>
+                                    <div class="code-block"><pre>{!! syntaxHighlight($json) !!}</pre></div>
+                                </div>
+                            </div>
+
+                            {{-- Error Responses --}}
+                            @if($hasErrors)
+                                @foreach($ep['error_responses'] as $errIdx => $err)
+                                    <div class="response-panel" id="{{ $cardId }}-error-{{ $errIdx }}">
+                                        <span class="status-badge s4xx">{{ $err['status'] }}</span>
+                                        <p class="error-desc">{{ $err['description'] }}</p>
+                                        @php $errJson = json_encode($err['body'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES); @endphp
+                                        <div class="code-wrapper">
+                                            <div class="code-toolbar">
+                                                <span class="code-lang">JSON</span>
+                                                <button class="code-copy-btn" onclick="copyCode(this)" data-code="{{ htmlspecialchars($errJson) }}">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                                                    Copy
+                                                </button>
+                                            </div>
+                                            <div class="code-block"><pre>{!! syntaxHighlight($errJson) !!}</pre></div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </section>
+        @endforeach
+    </main>
+</div>
+
+<footer class="footer">
+    <div class="footer-brand"><span>Nata<em>kahii</em></span></div>
+    <div class="footer-divider"></div>
+    <p>&copy; {{ date('Y') }} Natakahii. All rights reserved.</p>
+    <p style="margin-top:.4rem;font-size:.78rem;opacity:.6">Built with Laravel &amp; JWT Authentication</p>
+</footer>
+
+<script>
+    /* ── Toggle Endpoint Card ─────────────────────────── */
+    function toggleCard(trigger) {
+        const card = trigger.closest('.ep-card');
+        card.classList.toggle('open');
+    }
+
+    /* ── Copy Text to Clipboard ───────────────────────── */
+    function copyText(text, el) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('Copied: ' + text);
+            if (el) {
+                el.classList.add('copied');
+                setTimeout(() => el.classList.remove('copied'), 1200);
             }
-            
-            // Update active nav link on scroll
-            window.addEventListener('scroll', function() {
-                const scrollPosition = window.scrollY + 100;
-                const groups = document.querySelectorAll('.endpoint-group');
-                
-                groups.forEach(group => {
-                    const groupTop = group.offsetTop;
-                    const groupBottom = groupTop + group.offsetHeight;
-                    const groupId = group.id;
-                    
-                    if (scrollPosition >= groupTop && scrollPosition < groupBottom) {
-                        document.querySelectorAll('.nav-link').forEach(link => {
-                            link.classList.remove('active');
-                        });
-                        const activeLink = document.querySelector(`.nav-link[href="#${groupId}"]`);
-                        if (activeLink) {
-                            activeLink.classList.add('active');
-                        }
-                    }
-                });
-            });
-            
-            // Close mobile menu on escape key
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    closeMobileMenu();
-                }
-            });
-            
-            // Handle window resize
-            window.addEventListener('resize', function() {
-                if (window.innerWidth > 991) {
-                    closeMobileMenu();
-                }
-            });
         });
-    </script>
+    }
+
+    /* ── Copy Code Block ──────────────────────────────── */
+    function copyCode(btn) {
+        const code = btn.getAttribute('data-code');
+        const decoded = new DOMParser().parseFromString(code, 'text/html').body.textContent;
+        navigator.clipboard.writeText(decoded).then(() => {
+            showToast('JSON copied to clipboard');
+            btn.classList.add('copied');
+            const original = btn.innerHTML;
+            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><path d="M20 6 9 17l-5-5"/></svg> Copied!';
+            setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = original; }, 1500);
+        });
+    }
+
+    /* ── Toast ────────────────────────────────────────── */
+    let toastTimer;
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        document.getElementById('toastText').textContent = message;
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    /* ── Response Tabs ────────────────────────────────── */
+    function switchTab(btn, panelId) {
+        const container = btn.closest('.ep-panel');
+        container.querySelectorAll('.response-tab').forEach(t => t.classList.remove('active'));
+        container.querySelectorAll('.response-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(panelId).classList.add('active');
+    }
+
+    /* ── Mobile Navigation ────────────────────────────── */
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobileOverlay');
+
+    document.getElementById('mobileToggle').addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('open');
+    });
+    overlay.addEventListener('click', closeMobile);
+
+    function closeMobile() {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+    }
+
+    /* ── Scroll Spy ───────────────────────────────────── */
+    const navLinks = document.querySelectorAll('.nav-items li a');
+    window.addEventListener('scroll', () => {
+        const scrollY = window.scrollY + 120;
+        document.querySelectorAll('.ep-card').forEach(card => {
+            const top = card.offsetTop;
+            const bottom = top + card.offsetHeight;
+            if (scrollY >= top && scrollY < bottom) {
+                navLinks.forEach(l => l.classList.remove('active'));
+                const match = document.querySelector('.nav-items li a[href="#' + card.id + '"]');
+                if (match) match.classList.add('active');
+            }
+        });
+    });
+
+    /* ── Smooth scroll ────────────────────────────────── */
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', e => {
+            e.preventDefault();
+            const target = document.querySelector(a.getAttribute('href'));
+            if (target) {
+                window.scrollTo({ top: target.offsetTop - 80, behavior: 'smooth' });
+            }
+        });
+    });
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMobile(); });
+</script>
+
 </body>
 </html>
