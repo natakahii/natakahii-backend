@@ -21,7 +21,7 @@ return new class extends Migration
             $table->enum('status', ['draft', 'active', 'out_of_stock'])->default('draft');
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index('vendor_id');
             $table->index('category_id');
             $table->index('slug');

@@ -1,0 +1,638 @@
+NatakaHii Platform - API Routes (Laravel)
+routes/api.php - v1
+NatakaHii API Routes
+Laravel routes/api.php - API Version v1
+Includes: Auth, Catalog, Media/Video, Social, Cart/Wishlist, Checkout/Payments, AI (OpenAI), Shipping/Cargo, Messaging, D
+Roles & access levels (for reference)
+- customer
+- vendor (individual_vendor, business_vendor)
+- delivery_agent (cargo)
+- admin (normal_admin, super_admin)
+Notes
+1) Middleware names (role, role_any, admin.level) are placeholders; implement them in app/Http/Middleware.
+2) Use Policies/FormRequests to enforce ownership and fine-grained authorization.
+3) AI endpoints are under /api/v1/ai/* and include conversation history for authenticated users.
+Generated: 2026-02-08 (Africa/Dar_es_Salaam)
+Page 1NatakaHii Platform - API Routes (Laravel)
+routes/api.php - v1
+0001 | <?php
+0002 |
+0003 | use Illuminate\Support\Facades\Route;
+0004 |
+0005 | // ====== V1 Controllers ======
+0006 | use App\Http\Controllers\Api\V1\AuthController;
+0007 |
+0008 | // Catalog
+0009 | use App\Http\Controllers\Api\V1\CategoryController;
+0010 | use App\Http\Controllers\Api\V1\VendorController as PublicVendorController;
+0011 | use App\Http\Controllers\Api\V1\ProductController;
+0012 | use App\Http\Controllers\Api\V1\VariantController;
+0013 |
+0014 | // Media / Video
+0015 | use App\Http\Controllers\Api\V1\MediaController;
+0016 | use App\Http\Controllers\Api\V1\VideoController;
+0017 |
+0018 | // Social
+0019 | use App\Http\Controllers\Api\V1\Social\ProductLikeController;
+0020 | use App\Http\Controllers\Api\V1\Social\ProductShareController;
+0021 | use App\Http\Controllers\Api\V1\Social\VendorFollowController;
+0022 | use App\Http\Controllers\Api\V1\Social\NotInterestedController;
+0023 | use App\Http\Controllers\Api\V1\Social\ProductViewController;
+0024 |
+0025 | // Cart / Wishlist / Alerts
+0026 | use App\Http\Controllers\Api\V1\CartController;
+0027 | use App\Http\Controllers\Api\V1\WishlistController;
+0028 | use App\Http\Controllers\Api\V1\AlertController;
+0029 |
+0030 | // Checkout / Payments
+0031 | use App\Http\Controllers\Api\V1\CheckoutController;
+0032 | use App\Http\Controllers\Api\V1\PaymentController;
+0033 |
+0034 | // Shipping / Cargo
+0035 | use App\Http\Controllers\Api\V1\Shipping\ShippingQuoteController;
+0036 | use App\Http\Controllers\Api\V1\Cargo\FulfillmentCenterController;
+0037 | use App\Http\Controllers\Api\V1\Cargo\VendorDropoffController as CargoDropoffController;
+0038 | use App\Http\Controllers\Api\V1\Cargo\CargoShipmentController;
+0039 | use App\Http\Controllers\Api\V1\Cargo\DeliveryRunController as CargoDeliveryRunController;
+0040 | use App\Http\Controllers\Api\V1\Cargo\ShipmentTrackingController;
+0041 |
+0042 | // Vendor
+0043 | use App\Http\Controllers\Api\V1\Vendor\VendorProfileController;
+0044 | use App\Http\Controllers\Api\V1\Vendor\VendorProductController;
+0045 | use App\Http\Controllers\Api\V1\Vendor\VendorDropoffController as VendorDropoffController;
+0046 |
+0047 | // Messaging / Disputes / Analytics / Notifications
+0048 | use App\Http\Controllers\Api\V1\MessagingController;
+0049 | use App\Http\Controllers\Api\V1\DisputeController;
+0050 | use App\Http\Controllers\Api\V1\AnalyticsController;
+0051 | use App\Http\Controllers\Api\V1\NotificationController;
+0052 |
+0053 | // ■ AI (OpenAI)
+0054 | use App\Http\Controllers\Api\V1\AIChatController;
+0055 |
+0056 | // Admin (Normal)
+0057 | use App\Http\Controllers\Api\V1\Admin\DashboardController;
+0058 | use App\Http\Controllers\Api\V1\Admin\UserAdminController;
+0059 | use App\Http\Controllers\Api\V1\Admin\VendorAdminController;
+0060 | use App\Http\Controllers\Api\V1\Admin\ProductAdminController;
+0061 | use App\Http\Controllers\Api\V1\Admin\OrderAdminController;
+0062 | use App\Http\Controllers\Api\V1\Admin\PaymentAdminController;
+0063 | use App\Http\Controllers\Api\V1\Admin\EscrowAdminController;
+0064 | use App\Http\Controllers\Api\V1\Admin\RefundAdminController;
+0065 | use App\Http\Controllers\Api\V1\Admin\ShipmentAdminController;
+0066 | use App\Http\Controllers\Api\V1\Admin\DisputeAdminController;
+Generated: 2026-02-08 (Africa/Dar_es_Salaam)
+Page 2NatakaHii Platform - API Routes (Laravel)
+routes/api.php - v1
+0067 | use App\Http\Controllers\Api\V1\Admin\SupportAdminController;
+0068 | use App\Http\Controllers\Api\V1\Admin\ReportAdminController;
+0069 | use App\Http\Controllers\Api\V1\Admin\AdminAnalyticsController;
+0070 |
+0071 | // Super Admin
+0072 | use App\Http\Controllers\Api\V1\Admin\Super\AdminAccountController;
+0073 | use App\Http\Controllers\Api\V1\Admin\Super\SettingsController;
+0074 | use App\Http\Controllers\Api\V1\Admin\Super\PlatformFeeRuleController;
+0075 | use App\Http\Controllers\Api\V1\Admin\Super\SubscriptionPlanController;
+0076 | use App\Http\Controllers\Api\V1\Admin\Super\AuditLogController;
+0077 |
+0078 | Route::prefix('v1')->group(function () {
+0079 |
+0080 |
+/**
+0081 |
+* =========================
+0082 |
+* AUTHENTICATION (PUBLIC)
+0083 |
+* =========================
+0084 |
+*/
+0085 |
+Route::prefix('auth')->controller(AuthController::class)->group(function () {
+0086 |
+Route::post('register', 'register');
+0087 |
+Route::post('verify-registration', 'verifyRegistration');
+0088 |
+Route::post('login', 'login');
+0089 |
+Route::post('forgot-password', 'forgotPassword');
+0090 |
+Route::post('reset-password', 'resetPassword');
+0091 |
+Route::post('resend-otp', 'resendOtp');
+0092 |
+0093 |
+Route::middleware('auth:sanctum')->group(function () {
+0094 |
+Route::post('logout', 'logout');
+0095 |
+Route::get('me', 'me');
+0096 |
+});
+0097 |
+});
+0098 |
+0099 |
+/**
+0100 |
+* =========================
+0101 |
+* CATALOG (PUBLIC)
+0102 |
+* =========================
+0103 |
+*/
+0104 |
+Route::get('categories', [CategoryController::class, 'index']);
+0105 |
+Route::get('categories/{category}/filters', [CategoryController::class, 'filters']);
+0106 |
+0107 |
+Route::get('vendors', [PublicVendorController::class, 'index']);
+0108 |
+0109 |
+Route::get('products', [ProductController::class, 'index']);
+0110 |
+Route::get('products/{product}', [ProductController::class, 'show']);
+0111 |
+Route::get('products/{product}/variants/resolve', [VariantController::class,
+| 'resolve']);
+0112 |
+0113 |
+/**
+0114 |
+* =========================
+0115 |
+* MEDIA & VIDEO COMMERCE
+0116 |
+* =========================
+0117 |
+*/
+0118 |
+Route::get('products/{product}/media', [MediaController::class, 'index']);
+0119 |
+Route::get('videos/feed', [VideoController::class, 'feed']);
+0120 |
+0121 |
+Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(function
+| () {
+0122 |
+Route::post('products/{product}/media', [MediaController::class, 'store']);
+0123 |
+Route::patch('media/{media}', [MediaController::class, 'update']);
+0124 |
+Route::delete('media/{media}', [MediaController::class, 'destroy']);
+0125 |
+});
+0126 |
+0127 |
+/**
+0128 |
+* =========================
+0129 |
+* SOCIAL COMMERCE & ENGAGEMENT
+0130 |
+* =========================
+Generated: 2026-02-08 (Africa/Dar_es_Salaam)
+Page 3NatakaHii Platform - API Routes (Laravel)
+routes/api.php - v1
+0131 |
+*/
+0132 |
+Route::post('products/{product}/view', [ProductViewController::class, 'store']);
+0133 |
+Route::post('products/{product}/shares', [ProductShareController::class, 'store']);
+0134 |
+0135 |
+Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
+0136 |
+Route::post('products/{product}/likes', [ProductLikeController::class, 'store']);
+0137 |
+Route::delete('products/{product}/likes', [ProductLikeController::class,
+| 'destroy']);
+0138 |
+0139 |
+Route::post('vendors/{vendor}/follow', [VendorFollowController::class, 'store']);
+0140 |
+Route::delete('vendors/{vendor}/follow', [VendorFollowController::class,
+| 'destroy']);
+0141 |
+Route::get('me/following/vendors', [VendorFollowController::class, 'index']);
+0142 |
+0143 |
+Route::post('products/{product}/not-interested', [NotInterestedController::class,
+| 'store']);
+0144 |
+Route::get('me/not-interested', [NotInterestedController::class, 'index']);
+0145 |
+});
+0146 |
+0147 |
+/**
+0148 |
+* =========================
+0149 |
+* CART / WISHLIST / ALERTS
+0150 |
+* =========================
+0151 |
+*/
+0152 |
+Route::get('cart', [CartController::class, 'show']);
+0153 |
+Route::post('cart/items', [CartController::class, 'addItem']);
+0154 |
+0155 |
+Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
+0156 |
+Route::get('wishlists', [WishlistController::class, 'index']);
+0157 |
+Route::post('alerts', [AlertController::class, 'store']);
+0158 |
+});
+0159 |
+0160 |
+/**
+0161 |
+* =========================
+0162 |
+* SHIPPING QUOTES (CHECKOUT SUPPORT)
+0163 |
+* =========================
+0164 |
+*/
+0165 |
+Route::prefix('shipping')->group(function () {
+0166 |
+Route::post('quotes', [ShippingQuoteController::class, 'store']);
+0167 |
+Route::post('quotes/{quote}/select', [ShippingQuoteController::class, 'select']);
+0168 |
+});
+0169 |
+0170 |
+/**
+0171 |
+* =========================
+0172 |
+* CHECKOUT / PAYMENTS
+0173 |
+* =========================
+0174 |
+*/
+0175 |
+Route::post('checkout', [CheckoutController::class, 'store']);
+0176 |
+Route::post('payments', [PaymentController::class, 'store']);
+0177 |
+Route::post('payments/webhook/{provider}', [PaymentController::class, 'webhook']);
+0178 |
+0179 |
+/**
+0180 |
+* =========================
+0181 |
+* ■ AI (OpenAI) SHOPPING ASSISTANT
+0182 |
+* =========================
+0183 |
+*
+0184 |
+* Supports:
+0185 |
+* - AI conversation threads (AIConversation)
+0186 |
+* - messages (AIMessage)
+0187 |
+* - recommendation events tracking (AIRecommendationEvent)
+0188 |
+*
+0189 |
+* Guests can start a session-based assistant, but saving history is better when
+| authenticated.
+0190 |
+*/
+0191 |
+Route::prefix('ai')->group(function () {
+0192 |
+Generated: 2026-02-08 (Africa/Dar_es_Salaam)
+Page 4NatakaHii Platform - API Routes (Laravel)
+routes/api.php - v1
+0193 |
+// Public quick assistant (optional)
+0194 |
+Route::post('ask', [AIChatController::class, 'ask']); // POST /api/v1/ai/ask
+0195 |
+0196 |
+// Authenticated AI history + structured operations
+0197 |
+Route::middleware('auth:sanctum')->group(function () {
+0198 |
+Route::get('conversations', [AIChatController::class, 'index']);
+| // GET /api/v1/ai/conversations
+0199 |
+Route::post('conversations', [AIChatController::class, 'store']);
+| // POST /api/v1/ai/conversations
+0200 |
+Route::get('conversations/{conversation}', [AIChatController::class, 'show']);
+| // GET /api/v1/ai/conversations/{conversation}
+0201 |
+0202 |
+Route::post('conversations/{conversation}/messages', [AIChatController::class,
+| 'sendMessage']); // POST /api/v1/ai/conversations/{conversation}/messages
+0203 |
+0204 |
+// Track events such as “recommended_for_you”, click-through, add-to-cart from
+| AI suggestion
+0205 |
+Route::post('recommendation-events', [AIChatController::class,
+| 'trackRecommendationEvent']); // POST /api/v1/ai/recommendation-events
+0206 |
+0207 |
+// Optional: get personalized recommendations
+0208 |
+Route::get('recommendations', [AIChatController::class, 'recommendations']);
+| // GET /api/v1/ai/recommendations
+0209 |
+});
+0210 |
+});
+0211 |
+0212 |
+/**
+0213 |
+* =========================
+0214 |
+* SHIPPING / CARGO / TRACKING
+0215 |
+* =========================
+0216 |
+*/
+0217 |
+Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(function
+| () {
+0218 |
+Route::post('dropoffs', [VendorDropoffController::class, 'store']);
+0219 |
+Route::get('dropoffs', [VendorDropoffController::class, 'index']);
+0220 |
+Route::post('dropoffs/{dropoff}/mark-dropped-off', [VendorDropoffController::class,
+| 'markDroppedOff']);
+0221 |
+});
+0222 |
+0223 |
+Route::middleware(['auth:sanctum', 'role_any:delivery_agent,admin'])->prefix('cargo')->
+| group(function () {
+0224 |
+Route::get('fulfillment-centers', [FulfillmentCenterController::class, 'index']);
+0225 |
+Route::get('dropoffs', [CargoDropoffController::class, 'index']);
+0226 |
+0227 |
+Route::post('dropoffs/{dropoff}/receive', [CargoDropoffController::class,
+| 'receive']);
+0228 |
+Route::patch('dropoffs/{dropoff}/items', [CargoDropoffController::class,
+| 'updateItems']);
+0229 |
+0230 |
+Route::post('dropoffs/{dropoff}/qc/start', [CargoDropoffController::class,
+| 'qcStart']);
+0231 |
+Route::post('dropoffs/{dropoff}/qc/complete', [CargoDropoffController::class,
+| 'qcComplete']);
+0232 |
+0233 |
+Route::get('my/delivery-runs', [CargoDeliveryRunController::class, 'myRuns']);
+0234 |
+0235 |
+Route::post('shipments/{shipment}/tracking-events', [ShipmentTrackingController::cl
+| ass, 'store']);
+0236 |
+Route::post('shipments/{shipment}/mark-delivered', [ShipmentTrackingController::cla
+| ss, 'markDelivered']);
+0237 |
+});
+0238 |
+0239 |
+Route::middleware(['auth:sanctum', 'admin.level:normal_admin,super_admin'])->prefix('ca
+| rgo')->group(function () {
+0240 |
+Route::post('shipments', [CargoShipmentController::class, 'store']);
+0241 |
+});
+Generated: 2026-02-08 (Africa/Dar_es_Salaam)
+Page 5NatakaHii Platform - API Routes (Laravel)
+routes/api.php - v1
+0242 |
+0243 |
+Route::middleware('auth:sanctum')->get('shipments/{shipment}/tracking',
+| [ShipmentTrackingController::class, 'show']);
+0244 |
+0245 |
+/**
+0246 |
+* =========================
+0247 |
+* VENDOR (Inventory & Store)
+0248 |
+* =========================
+0249 |
+*/
+0250 |
+Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('vendor')->group(function
+| () {
+0251 |
+Route::post('profile', [VendorProfileController::class, 'store']);
+0252 |
+Route::post('products', [VendorProductController::class, 'store']);
+0253 |
+});
+0254 |
+0255 |
+/**
+0256 |
+* =========================
+0257 |
+* MESSAGING
+0258 |
+* =========================
+0259 |
+*/
+0260 |
+Route::middleware('auth:sanctum')->prefix('messages')->group(function () {
+0261 |
+Route::post('conversations', [MessagingController::class, 'startConversation']);
+0262 |
+});
+0263 |
+0264 |
+/**
+0265 |
+* =========================
+0266 |
+* DISPUTES
+0267 |
+* =========================
+0268 |
+*/
+0269 |
+Route::middleware(['auth:sanctum', 'role:customer'])->post('disputes',
+| [DisputeController::class, 'store']);
+0270 |
+0271 |
+/**
+0272 |
+* =========================
+0273 |
+* ANALYTICS
+0274 |
+* =========================
+0275 |
+*/
+0276 |
+Route::middleware(['auth:sanctum', 'role:vendor'])->prefix('analytics')->group(function
+| () {
+0277 |
+Route::get('vendor/overview', [AnalyticsController::class, 'vendorOverview']);
+0278 |
+});
+0279 |
+0280 |
+/**
+0281 |
+* =========================
+0282 |
+* NOTIFICATIONS
+0283 |
+* =========================
+0284 |
+*/
+0285 |
+Route::middleware('auth:sanctum')->get('notifications', [NotificationController::class,
+| 'index']);
+0286 |
+0287 |
+/**
+0288 |
+* =========================
+0289 |
+* ADMIN (NORMAL ADMIN)
+0290 |
+* =========================
+0291 |
+*/
+0292 |
+Route::middleware(['auth:sanctum', 'admin.level:normal_admin,super_admin'])->prefix('ad
+| min')->group(function () {
+0293 |
+0294 |
+Route::get('dashboard', [DashboardController::class, 'index']);
+0295 |
+0296 |
+Route::get('users', [UserAdminController::class, 'index']);
+0297 |
+Route::patch('users/{user}/status', [UserAdminController::class, 'updateStatus']);
+0298 |
+0299 |
+Route::get('vendors', [VendorAdminController::class, 'index']);
+0300 |
+Route::post('vendors/{vendor}/verification/review', [VendorAdminController::class,
+| 'reviewVerification']);
+Generated: 2026-02-08 (Africa/Dar_es_Salaam)
+Page 6NatakaHii Platform - API Routes (Laravel)
+routes/api.php - v1
+0301 |
+0302 |
+Route::get('products', [ProductAdminController::class, 'index']);
+0303 |
+Route::patch('products/{product}/moderation', [ProductAdminController::class,
+| 'moderate']);
+0304 |
+0305 |
+Route::get('orders', [OrderAdminController::class, 'index']);
+0306 |
+Route::get('payments', [PaymentAdminController::class, 'index']);
+0307 |
+Route::get('escrow/orders/{order}', [EscrowAdminController::class, 'showOrder']);
+0308 |
+0309 |
+Route::post('refunds', [RefundAdminController::class, 'store']);
+0310 |
+0311 |
+Route::get('shipments', [ShipmentAdminController::class, 'index']);
+0312 |
+Route::get('cargo/shipments/{shipment}/inspections', [ShipmentAdminController::clas
+| s, 'inspections']);
+0313 |
+0314 |
+Route::get('disputes', [DisputeAdminController::class, 'index']);
+0315 |
+Route::post('disputes/{dispute}/resolve', [DisputeAdminController::class,
+| 'resolve']);
+0316 |
+0317 |
+Route::get('support/tickets', [SupportAdminController::class, 'tickets']);
+0318 |
+0319 |
+Route::get('reports', [ReportAdminController::class, 'index']);
+0320 |
+Route::post('reports/{report}/action', [ReportAdminController::class, 'action']);
+0321 |
+0322 |
+Route::post('delivery-runs', [CargoDeliveryRunController::class, 'store']);
+0323 |
+Route::post('delivery-runs/{run}/shipments', [CargoDeliveryRunController::class,
+| 'assignShipments']);
+0324 |
+Route::post('delivery-runs/{run}/dispatch', [CargoDeliveryRunController::class,
+| 'dispatch']);
+0325 |
+0326 |
+Route::get('analytics/overview', [AdminAnalyticsController::class, 'overview']);
+0327 |
+});
+0328 |
+0329 |
+/**
+0330 |
+* =========================
+0331 |
+* ADMIN (SUPER ADMIN)
+0332 |
+* =========================
+0333 |
+*/
+0334 |
+Route::middleware(['auth:sanctum', 'admin.level:super_admin'])->prefix('admin/super')->
+| group(function () {
+0335 |
+0336 |
+Route::get('admins', [AdminAccountController::class, 'index']);
+0337 |
+Route::post('admins', [AdminAccountController::class, 'store']);
+0338 |
+Route::patch('admins/{user}', [AdminAccountController::class, 'update']);
+0339 |
+Route::delete('admins/{user}', [AdminAccountController::class, 'destroy']);
+0340 |
+0341 |
+Route::get('settings', [SettingsController::class, 'show']);
+0342 |
+Route::put('settings', [SettingsController::class, 'update']);
+0343 |
+0344 |
+Route::post('platform-fees', [PlatformFeeRuleController::class, 'store']);
+0345 |
+Route::post('subscription-plans', [SubscriptionPlanController::class, 'store']);
+0346 |
+0347 |
+Route::get('audit-logs', [AuditLogController::class, 'index']);
+0348 |
+});
+0349 | });
+0350 |
+Generated: 2026-02-08 (Africa/Dar_es_Salaam)
+Page 7

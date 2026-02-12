@@ -18,7 +18,7 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive', 'out_of_stock'])->default('active');
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index('product_id');
             $table->index('sku');
             $table->index('status');

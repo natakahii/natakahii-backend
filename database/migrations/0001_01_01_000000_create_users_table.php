@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->enum('status', ['active', 'blocked'])->default('active');
             $table->timestamps();
-            
+
             $table->index('email');
             $table->index('status');
         });

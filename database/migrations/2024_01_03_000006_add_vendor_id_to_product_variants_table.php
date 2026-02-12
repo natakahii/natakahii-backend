@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('product_variants', function (Blueprint $table) {
-            if (!Schema::hasColumn('product_variants', 'vendor_id')) {
+            if (! Schema::hasColumn('product_variants', 'vendor_id')) {
                 $table->foreignId('vendor_id')->nullable()->after('id')->constrained()->onDelete('cascade');
                 $table->index('vendor_id');
             }

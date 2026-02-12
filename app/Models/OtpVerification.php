@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class OtpVerification extends Model
 {
@@ -29,7 +29,7 @@ class OtpVerification extends Model
     public static function generateOtp(string $email, string $type = 'registration'): self
     {
         $otp = str_pad((string) random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
-        
+
         return self::create([
             'email' => $email,
             'otp' => $otp,
@@ -46,7 +46,7 @@ class OtpVerification extends Model
 
     public function isValid(): bool
     {
-        return !$this->is_used && !$this->isExpired();
+        return ! $this->is_used && ! $this->isExpired();
     }
 
     public function markAsUsed(): void
@@ -63,11 +63,12 @@ class OtpVerification extends Model
             ->latest()
             ->first();
 
-        if (!$verification || !$verification->isValid()) {
+        if (! $verification || ! $verification->isValid()) {
             return false;
         }
 
         $verification->markAsUsed();
+
         return true;
     }
 

@@ -18,6 +18,7 @@ class RoleSeeder extends Seeder
             ['name' => 'admin', 'description' => 'Full system access. Manages users, vendors, and platform settings.'],
             ['name' => 'vendor', 'description' => 'Sells products on the platform. Manages own inventory and orders.'],
             ['name' => 'customer', 'description' => 'Default role. Browses and purchases products.'],
+            ['name' => 'delivery_agent', 'description' => 'Handles cargo shipments and last-mile delivery.'],
         ];
 
         foreach ($roles as $role) {

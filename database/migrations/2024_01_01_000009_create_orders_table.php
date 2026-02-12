@@ -16,7 +16,7 @@ return new class extends Migration
             $table->enum('status', ['pending', 'paid', 'shipped', 'delivered', 'cancelled'])->default('pending');
             $table->enum('payment_status', ['pending', 'paid', 'failed'])->default('pending');
             $table->timestamps();
-            
+
             $table->index('user_id');
             $table->index('order_number');
             $table->index('status');

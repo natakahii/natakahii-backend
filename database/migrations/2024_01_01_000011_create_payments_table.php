@@ -16,7 +16,7 @@ return new class extends Migration
             $table->decimal('amount', 10, 2);
             $table->enum('status', ['pending', 'success', 'failed'])->default('pending');
             $table->timestamps();
-            
+
             $table->index('order_id');
             $table->index('transaction_id');
             $table->index('status');

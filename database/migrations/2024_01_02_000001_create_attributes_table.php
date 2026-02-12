@@ -17,7 +17,7 @@ return new class extends Migration
             $table->boolean('is_variant_attribute')->default(false);
             $table->integer('sort_order')->default(0);
             $table->timestamps();
-            
+
             $table->index('code');
             $table->index(['is_filterable', 'is_variant_attribute']);
         });

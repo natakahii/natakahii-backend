@@ -14,7 +14,7 @@ return new class extends Migration
             $table->decimal('amount', 10, 2);
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->timestamps();
-            
+
             $table->index('vendor_id');
             $table->index('status');
         });

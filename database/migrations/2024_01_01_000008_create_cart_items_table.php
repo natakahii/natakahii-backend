@@ -15,7 +15,7 @@ return new class extends Migration
             $table->unsignedInteger('quantity')->default(1);
             $table->decimal('price', 10, 2);
             $table->timestamps();
-            
+
             $table->index('cart_id');
             $table->index('product_id');
         });

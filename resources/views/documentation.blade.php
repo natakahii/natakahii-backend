@@ -5,17 +5,11 @@
 if (! function_exists('syntaxHighlight')) {
     function syntaxHighlight(string $json): string {
         $json = htmlspecialchars($json, ENT_QUOTES);
-        // Keys
         $json = preg_replace('/&quot;([^&]+?)&quot;\s*:/', '<span class="json-key">&quot;$1&quot;</span>:', $json);
-        // String values
         $json = preg_replace('/:\s*&quot;(.*?)&quot;/', ': <span class="json-string">&quot;$1&quot;</span>', $json);
-        // Numbers
         $json = preg_replace('/:\s*(\d+)/', ': <span class="json-number">$1</span>', $json);
-        // Booleans
         $json = preg_replace('/:\s*(true|false)/', ': <span class="json-bool">$1</span>', $json);
-        // Null
         $json = preg_replace('/:\s*null/', ': <span class="json-null">null</span>', $json);
-        // Braces and brackets
         $json = str_replace(['{', '}', '[', ']'], [
             '<span class="json-brace">{</span>',
             '<span class="json-brace">}</span>',
@@ -23,6 +17,108 @@ if (! function_exists('syntaxHighlight')) {
             '<span class="json-brace">]</span>',
         ], $json);
         return $json;
+    }
+}
+
+/**
+ * Syntax-highlight a cURL command string.
+ */
+if (! function_exists('highlightCurl')) {
+    function highlightCurl(string $curl): string {
+        $curl = htmlspecialchars($curl, ENT_QUOTES);
+        // curl command
+        $curl = preg_replace('/^(curl)/', '<span class="curl-cmd">$1</span>', $curl);
+        // flags like -X, -H, -d, -F
+        $curl = preg_replace('/ (-[XHdF]) /', ' <span class="curl-flag">$1</span> ', $curl);
+        $curl = preg_replace('/(--[a-z-]+)/', '<span class="curl-flag">$1</span>', $curl);
+        // URL (after -X METHOD)
+        $curl = preg_replace('#(https?://[^\s\\\\]+)#', '<span class="curl-url">$1</span>', $curl);
+        // Quoted strings (headers and data)
+        $curl = preg_replace('/&quot;([^&]*?)&quot;/', '<span class="curl-string">&quot;$1&quot;</span>', $curl);
+        // Single-quoted JSON data
+        $curl = preg_replace("/&#039;(.+?)&#039;/s", "<span class=\"curl-string\">&#039;$1&#039;</span>", $curl);
+        return $curl;
+    }
+}
+
+/**
+ * Generate a cURL command from endpoint data.
+ */
+if (! function_exists('buildCurl')) {
+    function buildCurl(array $ep, string $baseUrl): string {
+        $method = strtoupper($ep['method']);
+        $url = rtrim($baseUrl, '/') . $ep['url'];
+        $hasFile = false;
+        $params = $ep['request'] ?? [];
+
+        foreach ($params as $p) {
+            if (in_array($p['type'], ['file'])) {
+                $hasFile = true;
+                break;
+            }
+        }
+
+        $parts = ['curl -X ' . $method . ' \\'];
+        $parts[] = '  "' . $url . '" \\';
+
+        if (!$hasFile) {
+            $parts[] = '  -H "Content-Type: application/json" \\';
+        }
+        $parts[] = '  -H "Accept: application/json" \\';
+
+        if ($ep['auth_required']) {
+            $parts[] = '  -H "Authorization: Bearer YOUR_TOKEN" \\';
+        }
+
+        if (count($params) > 0 && in_array($method, ['POST', 'PUT', 'PATCH'])) {
+            if ($hasFile) {
+                foreach ($params as $p) {
+                    $val = match($p['type']) {
+                        'file'    => '@/path/to/' . str_replace('[]', '', $p['name']) . '.jpg',
+                        'integer' => '1',
+                        'number'  => '100.00',
+                        'boolean' => 'true',
+                        'array'   => '[]',
+                        'object'  => '{}',
+                        default   => ($p['name'] === 'email') ? 'user@example.com'
+                                   : (($p['name'] === 'password' || $p['name'] === 'password_confirmation') ? 'SecurePass123'
+                                   : 'value'),
+                    };
+                    $parts[] = '  -F "' . str_replace('[]', '[]', $p['name']) . '=' . $val . '" \\';
+                }
+            } else {
+                $body = [];
+                foreach ($params as $p) {
+                    if ($p['type'] === 'file') { continue; }
+                    $val = match($p['type']) {
+                        'integer' => 1,
+                        'number'  => 100.00,
+                        'boolean' => true,
+                        'array'   => [],
+                        'object'  => (object)[],
+                        default   => match(true) {
+                            str_contains($p['name'], 'email')    => 'user@example.com',
+                            str_contains($p['name'], 'password') => 'SecurePass123',
+                            str_contains($p['name'], 'phone')    => '+255700000000',
+                            str_contains($p['name'], 'name')     => 'John Doe',
+                            str_contains($p['name'], 'otp')      => '123456',
+                            default                               => 'value',
+                        },
+                    };
+                    $body[$p['name']] = $val;
+                }
+                if (!empty($body)) {
+                    $jsonData = json_encode($body, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+                    $parts[] = "  -d '" . $jsonData . "'";
+                }
+            }
+        }
+
+        // Remove trailing backslash from last line
+        $lastIdx = count($parts) - 1;
+        $parts[$lastIdx] = rtrim($parts[$lastIdx], ' \\');
+
+        return implode("\n", $parts);
     }
 }
 @endphp
@@ -187,6 +283,7 @@ if (! function_exists('syntaxHighlight')) {
         .nav-method.get { background: var(--green-soft); color: var(--green); }
         .nav-method.post { background: var(--accent-soft); color: var(--accent); }
         .nav-method.put { background: var(--blue-soft); color: var(--blue); }
+        .nav-method.patch { background: var(--yellow-soft); color: var(--yellow); }
         .nav-method.delete { background: var(--red-soft); color: var(--red); }
 
         @media (max-width: 1024px) {
@@ -276,6 +373,7 @@ if (! function_exists('syntaxHighlight')) {
         .method-pill.get { background: var(--green); }
         .method-pill.post { background: var(--accent); }
         .method-pill.put { background: var(--blue); }
+        .method-pill.patch { background: var(--yellow); }
         .method-pill.delete { background: var(--red); }
 
         .ep-meta { flex: 1; min-width: 0; }
@@ -439,6 +537,12 @@ if (! function_exists('syntaxHighlight')) {
         .json-null { color: #f87171; }
         .json-brace { color: #94a3b8; }
 
+        /* cURL Syntax Colors */
+        .curl-cmd { color: #c084fc; font-weight: 700; }
+        .curl-flag { color: #fbbf24; }
+        .curl-url { color: #7dd3fc; }
+        .curl-string { color: #86efac; }
+
         /* ── Response Tabs ────────────────────────────────── */
         .response-tabs {
             display: flex; gap: .25rem; margin-bottom: .5rem;
@@ -584,17 +688,66 @@ if (! function_exists('syntaxHighlight')) {
                     Include it as <code>Authorization: Bearer &lt;token&gt;</code> in every authenticated request.
                 </div>
             </div>
+
+            <div class="info-banner" style="margin-top:.75rem;background:var(--blue-soft);border-color:rgba(59,130,246,.25)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)"><path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.6-2-2.4-3.5-4.4-3.5h-1.2C15.7 5 13 3 10 3c-3.9 0-7 3.1-7 7 0 2 .8 3.8 2.1 5"/><path d="M12 12v9"/><polyline points="8 17 12 21 16 17"/></svg>
+                <div>
+                    <strong>Media Storage</strong> — All uploaded files (images, videos, logos) are stored in <strong>Backblaze B2</strong> cloud storage and served via CDN.
+                    File URLs in responses use the format <code>https://cdn.natakahii.com/path/file.ext</code>.
+                </div>
+            </div>
         </div>
 
         @foreach($endpoints as $group)
             <section class="endpoint-group" id="group-{{ Str::slug($group['group']) }}">
                 <div class="group-heading">
                     <div class="group-heading-icon">
-                        @if($group['group'] === 'Authentication')
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                        @else
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-                        @endif
+                        @switch($group['group'])
+                            @case('Authentication')
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                                @break
+                            @case('User Profile')
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                @break
+                            @case('Catalog')
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                @break
+                            @case('Vendor')
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                @break
+                            @case('Cart, Wishlist & Alerts')
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0020 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                                @break
+                            @case('Checkout & Payments')
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                                @break
+                            @case('Social Commerce')
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                                @break
+                            @case('Media & Video')
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                                @break
+                            @case('AI Shopping Assistant')
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 017 7c0 3-2 5-4 6v1a2 2 0 01-2 2h-2a2 2 0 01-2-2v-1c-2-1-4-3-4-6a7 7 0 017-7z"/><line x1="10" y1="20" x2="14" y2="20"/><line x1="10" y1="22" x2="14" y2="22"/></svg>
+                                @break
+                            @case('Cargo & Shipping')
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                                @break
+                            @case('Messaging & Disputes')
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                                @break
+                            @case('Analytics & Notifications')
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                                @break
+                            @case('Admin')
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                                @break
+                            @case('Super Admin')
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                @break
+                            @default
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                        @endswitch
                     </div>
                     <div>
                         <h2>{{ $group['group'] }}</h2>
@@ -699,6 +852,23 @@ if (! function_exists('syntaxHighlight')) {
                                     </table>
                                 </div>
                             @endif
+
+                            {{-- cURL Example --}}
+                            <div class="section-label" style="margin-top:1.5rem">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                                cURL Example
+                            </div>
+                            @php $curlCmd = buildCurl($ep, url('/') ); @endphp
+                            <div class="code-wrapper">
+                                <div class="code-toolbar">
+                                    <span class="code-lang">BASH</span>
+                                    <button class="code-copy-btn" onclick="copyCode(this)" data-code="{{ htmlspecialchars($curlCmd) }}">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                                        Copy
+                                    </button>
+                                </div>
+                                <div class="code-block"><pre>{!! highlightCurl($curlCmd) !!}</pre></div>
+                            </div>
 
                             {{-- Responses --}}
                             <div class="section-label" style="margin-top:1.5rem">
