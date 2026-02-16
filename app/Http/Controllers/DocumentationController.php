@@ -897,6 +897,67 @@ class DocumentationController extends Controller
                         'error_responses' => [],
                     ],
                     [
+                        'name' => 'List All Categories', 'method' => 'GET', 'url' => '/api/v1/admin/categories',
+                        'description' => 'List all categories including inactive ones with children and product counts.', 'auth_required' => true,
+                        'request' => [],
+                        'headers' => ['Authorization' => 'Bearer {token}'],
+                        'success_response' => ['status' => 200, 'body' => ['categories' => [['id' => 1, 'name' => 'Electronics', 'slug' => 'electronics', 'is_active' => true, 'sort_order' => 1, 'children' => [], 'products_count' => 45]]]],
+                        'error_responses' => [],
+                    ],
+                    [
+                        'name' => 'Create Category', 'method' => 'POST', 'url' => '/api/v1/admin/categories',
+                        'description' => 'Create a new category. Slug is auto-generated from name if not provided.', 'auth_required' => true,
+                        'request' => [
+                            ['name' => 'name', 'type' => 'string', 'required' => true, 'rules' => 'max:255', 'description' => 'Category name.'],
+                            ['name' => 'slug', 'type' => 'string', 'required' => false, 'rules' => 'max:255|unique:categories', 'description' => 'URL-friendly slug (auto-generated if not provided).'],
+                            ['name' => 'parent_id', 'type' => 'integer', 'required' => false, 'rules' => 'exists:categories,id', 'description' => 'Parent category ID for subcategories.'],
+                            ['name' => 'is_active', 'type' => 'boolean', 'required' => false, 'rules' => '', 'description' => 'Active status. Default: true.'],
+                            ['name' => 'sort_order', 'type' => 'integer', 'required' => false, 'rules' => 'min:0', 'description' => 'Display order. Auto-assigned if not provided.'],
+                        ],
+                        'headers' => ['Authorization' => 'Bearer {token}'],
+                        'success_response' => ['status' => 201, 'body' => ['message' => 'Category created successfully', 'category' => ['id' => 1, 'name' => 'Electronics', 'slug' => 'electronics', 'is_active' => true, 'sort_order' => 1]]],
+                        'error_responses' => [
+                            ['status' => 422, 'description' => 'Validation failed', 'body' => ['message' => 'The name field is required.', 'errors' => ['name' => ['The name field is required.']]]],
+                        ],
+                    ],
+                    [
+                        'name' => 'Update Category', 'method' => 'PATCH', 'url' => '/api/v1/admin/categories/{category}',
+                        'description' => 'Update an existing category.', 'auth_required' => true,
+                        'request' => [
+                            ['name' => 'name', 'type' => 'string', 'required' => false, 'rules' => 'max:255', 'description' => 'Updated category name.'],
+                            ['name' => 'slug', 'type' => 'string', 'required' => false, 'rules' => 'max:255|unique:categories', 'description' => 'Updated slug.'],
+                            ['name' => 'parent_id', 'type' => 'integer', 'required' => false, 'rules' => 'exists:categories,id', 'description' => 'Updated parent category.'],
+                            ['name' => 'is_active', 'type' => 'boolean', 'required' => false, 'rules' => '', 'description' => 'Updated active status.'],
+                            ['name' => 'sort_order', 'type' => 'integer', 'required' => false, 'rules' => 'min:0', 'description' => 'Updated sort order.'],
+                        ],
+                        'headers' => ['Authorization' => 'Bearer {token}'],
+                        'success_response' => ['status' => 200, 'body' => ['message' => 'Category updated successfully', 'category' => ['id' => 1, 'name' => 'Electronics & Gadgets', 'slug' => 'electronics-gadgets']]],
+                        'error_responses' => [
+                            ['status' => 404, 'description' => 'Category not found', 'body' => ['message' => 'Not found.']],
+                        ],
+                    ],
+                    [
+                        'name' => 'Delete Category', 'method' => 'DELETE', 'url' => '/api/v1/admin/categories/{category}',
+                        'description' => 'Delete a category. Cannot delete if it has products or subcategories.', 'auth_required' => true,
+                        'request' => [],
+                        'headers' => ['Authorization' => 'Bearer {token}'],
+                        'success_response' => ['status' => 200, 'body' => ['message' => 'Category deleted successfully']],
+                        'error_responses' => [
+                            ['status' => 422, 'description' => 'Cannot delete', 'body' => ['message' => 'Cannot delete category with existing products']],
+                            ['status' => 404, 'description' => 'Category not found', 'body' => ['message' => 'Not found.']],
+                        ],
+                    ],
+                    [
+                        'name' => 'Toggle Category Status', 'method' => 'PATCH', 'url' => '/api/v1/admin/categories/{category}/toggle-status',
+                        'description' => 'Toggle category active/inactive status.', 'auth_required' => true,
+                        'request' => [],
+                        'headers' => ['Authorization' => 'Bearer {token}'],
+                        'success_response' => ['status' => 200, 'body' => ['message' => 'Category status updated successfully', 'category' => ['id' => 1, 'is_active' => false]]],
+                        'error_responses' => [
+                            ['status' => 404, 'description' => 'Category not found', 'body' => ['message' => 'Not found.']],
+                        ],
+                    ],
+                    [
                         'name' => 'Admin Products', 'method' => 'GET', 'url' => '/api/v1/admin/products',
                         'description' => 'List all products with optional filters.', 'auth_required' => true,
                         'request' => [

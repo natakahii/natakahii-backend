@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Admin\AdminAnalyticsController;
 use App\Http\Controllers\Api\Admin\AdminController;
+use App\Http\Controllers\Api\Admin\CategoryAdminController;
 use App\Http\Controllers\Api\Admin\DisputeAdminController;
 use App\Http\Controllers\Api\Admin\EscrowAdminController;
 use App\Http\Controllers\Api\Admin\OrderAdminController;
@@ -280,6 +281,12 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/vendors', [VendorAdminController::class, 'index']);
         Route::post('/vendors/{vendor}/verification/review', [VendorAdminController::class, 'reviewVerification']);
+
+        Route::get('/categories', [CategoryAdminController::class, 'index']);
+        Route::post('/categories', [CategoryAdminController::class, 'store']);
+        Route::patch('/categories/{category}', [CategoryAdminController::class, 'update']);
+        Route::delete('/categories/{category}', [CategoryAdminController::class, 'destroy']);
+        Route::patch('/categories/{category}/toggle-status', [CategoryAdminController::class, 'toggleStatus']);
 
         Route::get('/products', [ProductAdminController::class, 'index']);
         Route::patch('/products/{product}/moderation', [ProductAdminController::class, 'moderate']);
