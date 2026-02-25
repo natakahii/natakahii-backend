@@ -27,7 +27,7 @@ class CategoryController extends Controller
             ->get();
 
         return response()->json([
-            'categories' => CategoryResource::collection($categories),
+            'data' => CategoryResource::collection($categories),
         ]);
     }
 

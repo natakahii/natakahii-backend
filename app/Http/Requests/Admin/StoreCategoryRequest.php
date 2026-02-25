@@ -31,6 +31,7 @@ class StoreCategoryRequest extends FormRequest
                 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
                 Rule::unique('categories', 'slug')->ignore($categoryId),
             ],
+            'icon' => ['nullable', 'string', 'max:100'],
             'parent_id' => [
                 'nullable',
                 'integer',
@@ -65,6 +66,7 @@ class StoreCategoryRequest extends FormRequest
             'name.max' => 'Category name cannot exceed 255 characters',
             'slug.regex' => 'Slug must contain only lowercase letters, numbers, and hyphens',
             'slug.unique' => 'This slug is already in use',
+            'icon.max' => 'Icon name cannot exceed 100 characters',
             'parent_id.exists' => 'The selected parent category does not exist',
             'is_active.boolean' => 'Active status must be true or false',
             'sort_order.integer' => 'Sort order must be a number',
