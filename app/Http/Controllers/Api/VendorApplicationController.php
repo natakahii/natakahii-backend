@@ -5,14 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreVendorApplicationRequest;
 use App\Models\VendorApplication;
+use App\Notifications\VendorApplicationApproved;
+use App\Notifications\VendorApplicationRejected;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class VendorApplicationController extends Controller
 {
-    /**
-     * Get the current user's vendor application status.
-     */
+   
     public function status(): JsonResponse
     {
         $user = auth('api')->user();
@@ -129,9 +130,10 @@ class VendorApplicationController extends Controller
             'rejection_reason' => $request->rejection_reason ?? null,
         ]);
 
-        // If approved, create a vendor account
+        $user = $application->user;
+
+        // If approved, create a vendor account and send approval email
         if ($request->status === 'approved') {
-            $user = $application->user;
             $vendor = $user->vendor()->firstOrCreate(
                 ['user_id' => $user->id],
                 [
@@ -143,6 +145,28 @@ class VendorApplicationController extends Controller
             );
 
             $user->assignRole('vendor');
+
+            // Send approval email asynchronously
+            try {
+                $user->notify(new VendorApplicationApproved($application));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send vendor approval email', [
+                    'user_id' => $user->id,
+                    'application_id' => $application->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        } else if ($request->status === 'rejected') {
+            // Send rejection email with reason asynchronously
+            try {
+                $user->notify(new VendorApplicationRejected($application));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send vendor rejection email', [
+                    'user_id' => $user->id,
+                    'application_id' => $application->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return response()->json([
