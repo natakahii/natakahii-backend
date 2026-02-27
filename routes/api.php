@@ -51,7 +51,7 @@ use App\Http\Controllers\Api\Vendor\VendorProductController;
 use App\Http\Controllers\Api\Vendor\VendorProfileController;
 use App\Http\Controllers\Api\VideoController;
 use App\Http\Controllers\Api\WishlistController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\VendorApplicationController;
 
 Route::prefix('v1')->group(function () {
 
@@ -84,6 +84,16 @@ Route::prefix('v1')->group(function () {
         Route::patch('/', [UserProfileController::class, 'update']);
         Route::post('/photo', [UserProfileController::class, 'updatePhoto']);
         Route::delete('/photo', [UserProfileController::class, 'destroyPhoto']);
+    });
+
+    /**
+     * =========================
+     * VENDOR APPLICATION
+     * =========================
+     */
+    Route::middleware('auth:api')->prefix('vendor-application')->group(function () {
+        Route::get('/status', [VendorApplicationController::class, 'status']);
+        Route::post('/', [VendorApplicationController::class, 'store']);
     });
 
     /**
@@ -281,6 +291,10 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/vendors', [VendorAdminController::class, 'index']);
         Route::post('/vendors/{vendor}/verification/review', [VendorAdminController::class, 'reviewVerification']);
+
+        Route::get('/vendor-applications', [VendorApplicationController::class, 'index']);
+        Route::get('/vendor-applications/{application}', [VendorApplicationController::class, 'show']);
+        Route::patch('/vendor-applications/{application}/status', [VendorApplicationController::class, 'updateStatus']);
 
         Route::get('/categories', [CategoryAdminController::class, 'index']);
         Route::post('/categories', [CategoryAdminController::class, 'store']);
